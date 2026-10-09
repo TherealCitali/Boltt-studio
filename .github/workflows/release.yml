@@ -1,0 +1,60 @@
+name: Stable release
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Read version and reject existing tag
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if git rev-parse "refs/tags/v$VERSION" >/dev/null 2>&1; then echo "Version tag exists; bump version first."; exit 1; fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v6
+      - run: chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:lintDebug assembleRelease
+      - uses: ilharp/sign-android-release@v2.0.0
+        with:
+          releaseDir: app/build/outputs/apk/release/
+          signingKey: ${{ secrets.KEYSTORE }}
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          buildToolsVersion: 35.0.0
+      - name: Collect signed APK
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+          FILE=$(find app/build/outputs/apk/release -maxdepth 1 -name '*-signed.apk' -print -quit)
+          test -n "$FILE"
+          mkdir -p release-files
+          NAME="Boltt-Studio-Release-${VERSION}-Universal.apk"
+          cp "$FILE" "release-files/$NAME"
+          (cd release-files && sha256sum "$NAME" > "$NAME.sha256")
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          target_commitish: ${{ github.sha }}
+          name: Boltt Studio v${{ steps.version.outputs.value }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: release-files/*
