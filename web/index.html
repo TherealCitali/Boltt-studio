@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brillia Face Maker</title>
+<style>
+  :root{--bg:#111418;--card:#1b2027;--line:#2c333d;--text:#e9edf2;--mute:#9aa4b1;--acc:#ff7a2f;--ok:#3ecf8e;--err:#ff5d5d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  header h1{font-size:17px;margin:0;flex:1}
+  #connState{font-size:12px;padding:4px 9px;border-radius:99px;background:#2a2f37;color:var(--mute)}
+  #connState.on{background:#123d2c;color:var(--ok)}
+  main{max-width:980px;margin:auto;padding:14px;display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:820px){main{grid-template-columns:300px 1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .stage{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .watch{padding:14px;border-radius:46px;background:#050607;box-shadow:0 0 0 3px #2a2e35,0 10px 30px #0008}
+  canvas#face{width:240px;height:296px;border-radius:34px;display:block;touch-action:none;cursor:grab;background:#000}
+  .hint{font-size:12px;color:var(--mute);text-align:center}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:16px 0 8px}
+  h2:first-child{margin-top:0}
+  label{display:block;font-size:14px;margin:8px 0 4px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  input[type=range]{width:100%}
+  select,input[type=file],button{font:inherit}
+  select{width:100%;padding:8px;border-radius:8px;background:#0f1216;color:var(--text);border:1px solid var(--line)}
+  button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#252b33;color:var(--text);cursor:pointer}
+  button.primary{background:var(--acc);border-color:var(--acc);color:#1a0d04;font-weight:600}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{flex:1;border:0;border-radius:0;background:transparent}
+  .seg button.sel{background:#353d48}
+  input[type=color]{width:44px;height:34px;border:0;background:none;padding:0}
+  progress{width:100%;height:12px}
+  #log{font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;background:#0b0d10;border-radius:8px;padding:8px;height:150px;overflow:auto;white-space:pre-wrap;color:#b9c3cf}
+  .warn{font-size:13px;background:#3a2a12;border:1px solid #6b4a17;color:#ffd79b;padding:10px;border-radius:10px}
+  .small{font-size:12px;color:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Brillia Face Maker</h1>
+  <span id="connState">Not connected</span>
+</header>
+
+<main>
+  <section class="card stage">
+    <div class="watch"><canvas id="face" width="240" height="296"></canvas></div>
+    <div class="hint">Drag the clock to move it · preview shows 10:09</div>
+    <div class="row">
+      <button id="snapBtn">Snap to grid: on</button>
+      <button id="centerBtn">Center clock</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Background</h2>
+    <input type="file" id="bgFile" accept="image/*">
+    <label>Zoom</label><input type="range" id="zoom" min="100" max="300" value="100">
+    <label>Shift left / right</label><input type="range" id="panX" min="-100" max="100" value="0">
+    <label>Shift up / down</label><input type="range" id="panY" min="-100" max="100" value="0">
+
+    <h2>Clock</h2>
+    <div class="seg" id="layoutSeg">
+      <button data-v="stacked" class="sel">HH over MM</button>
+      <button data-v="line">HH MM in one line</button>
+    </div>
+    <label>Font</label>
+    <select id="fontSel">
+      <option value="sans-serif|700">Sans bold</option>
+      <option value="sans-serif|400">Sans regular</option>
+      <option value="serif|700">Serif bold</option>
+      <option value="monospace|700">Mono bold</option>
+      <option value="Impact, sans-serif|400">Impact (if installed)</option>
+      <option value="cursive|700">Handwritten (system)</option>
+    </select>
+    <label>…or load your own font (.ttf / .otf)</label>
+    <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2">
+    <div class="row" style="margin-top:10px">
+      <label style="margin:0">Hours</label><input type="color" id="colH" value="#ffffff">
+      <label style="margin:0">Minutes</label><input type="color" id="colM" value="#ffffff">
+      <label style="margin:0"><input type="checkbox" id="outline" checked> Outline</label>
+    </div>
+    <label>Digit size <span id="sizeVal" class="small"></span></label>
+    <input type="range" id="size" min="70" max="130" value="100">
+    <div class="small">100% = 42×66 px, the size Da Fit's own faces use. Other sizes are untested on the watch.</div>
+
+    <h2>Watch</h2>
+    <div class="warn">Before connecting, open Android Settings → Apps → Da Fit → <b>Force stop</b>, so it doesn't fight over the Bluetooth link. Keep the watch charged above 30%.</div>
+    <div class="row" style="margin-top:10px">
+      <button id="connectBtn" class="primary">Connect watch</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="sendBtn" class="primary" disabled>Send this face</button>
+      <button id="downloadBtn">Download .bin</button>
+    </div>
+    <label>Test first: send the original Da Fit face file</label>
+    <div class="row">
+      <button id="sendOrigBtn" disabled>Send captured Da Fit face</button>
+      <input type="file" id="binFile" accept=".bin">
+    </div>
+    <progress id="prog" value="0" max="1" style="margin-top:12px"></progress>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script src="moyface.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('face'), ctx = cv.getContext('2d');
+const W = 240, H = 296;
+const state = { bg: null, layout: 'stacked', x: 74, y: 41, snap: true, family: 'sans-serif', weight: '700', customFont: null };
+let digitCache = null;
+
+function log(msg, cls) {
+  const t = new Date().toTimeString().slice(0, 8);
+  $('log').textContent += `[${t}] ${msg}\n`; $('log').scrollTop = 1e9;
+}
+
+// ---------- digit rendering ----------
+function digitSize() { const s = $('size').value / 100; return [Math.round(42 * s), Math.round(66 * s)]; }
+
+function renderDigit(n, color, dw, dh) {
+  const big = document.createElement('canvas'); big.width = dw * 3; big.height = dh * 3;
+  const g = big.getContext('2d');
+  const fam = state.customFont || state.family;
+  g.font = `${state.weight} ${dh * 2.2}px ${fam}`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if ($('outline').checked) { g.lineWidth = dh * 0.12; g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineJoin = 'round'; g.strokeText(String(n), big.width / 2, big.height / 2); }
+  g.fillStyle = color; g.fillText(String(n), big.width / 2, big.height / 2);
+  // crop to ink bounding box
+  const d = g.getImageData(0, 0, big.width, big.height).data;
+  let x0 = big.width, y0 = big.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < big.height; y++) for (let x = 0; x < big.width; x++) if (d[(y * big.width + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const cell = document.createElement('canvas'); cell.width = dw; cell.height = dh;
+  if (x1 >= 0) {
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, sc = Math.min(dw / bw, dh / bh);
+    const c = cell.getContext('2d'); c.imageSmoothingQuality = 'high';
+    c.drawImage(big, x0, y0, bw, bh, (dw - bw * sc) / 2, (dh - bh * sc) / 2, bw * sc, bh * sc);
+  }
+  return cell;
+}
+
+function buildDigits() {
+  const [dw, dh] = digitSize();
+  const hc = $('colH').value, mc = $('colM').value;
+  const setH = [...Array(10)].map((_, n) => renderDigit(n, hc, dw, dh));
+  const setM = hc === mc ? setH : [...Array(10)].map((_, n) => renderDigit(n, mc, dw, dh));
+  digitCache = { dw, dh, sets: hc === mc ? [setH] : [setH, setM], timeSets: hc === mc ? [0, 0, 0, 0] : [0, 0, 1, 1] };
+}
+
+function clockBox() {
+  const { dw, dh } = digitCache, gap = Math.round(dw * 0.19), lgap = Math.round(dh * 0.21);
+  if (state.layout === 'stacked') {
+    return { w: dw * 2 + gap, h: dh * 2 + lgap,
+      pos: [[0, 0], [dw + gap, 0], [0, dh + lgap], [dw + gap, dh + lgap]] };
+  }
+  const mid = Math.round(dw * 0.45);
+  return { w: dw * 4 + gap * 2 + mid, h: dh,
+    pos: [[0, 0], [dw + gap, 0], [2 * dw + gap + mid, 0], [3 * dw + 2 * gap + mid, 0]] };
+}
+
+function clampClock() {
+  const b = clockBox();
+  state.x = Math.max(0, Math.min(W - b.w, state.x)); state.y = Math.max(0, Math.min(H - b.h, state.y));
+}
+function timeXY() { const b = clockBox(); return b.pos.map(([dx, dy]) => [state.x + dx, state.y + dy]); }
+
+// ---------- drawing ----------
+function drawBackground(g) {
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  if (!state.bg) {
+    const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#2b3a55'); gr.addColorStop(1, '#0d1220');
+    g.fillStyle = gr; g.fillRect(0, 0, W, H); return;
+  }
+  const img = state.bg, z = $('zoom').value / 100;
+  const s = Math.max(W / img.width, H / img.height) * z, dw = img.width * s, dh = img.height * s;
+  const ox = (W - dw) / 2 + ($('panX').value / 100) * (dw - W) / 2, oy = (H - dh) / 2 + ($('panY').value / 100) * (dh - H) / 2;
+  g.imageSmoothingQuality = 'high'; g.drawImage(img, ox, oy, dw, dh);
+}
+
+function draw() {
+  drawBackground(ctx);
+  clampClock();
+  const xy = timeXY(), shown = [1, 0, 0, 9];
+  xy.forEach(([x, y], i) => ctx.drawImage(digitCache.sets[digitCache.timeSets[i]][shown[i]], x, y));
+  if (dragging) { const b = clockBox(); ctx.strokeStyle = '#ff7a2f'; ctx.setLineDash([4, 3]); ctx.strokeRect(state.x - 2, state.y - 2, b.w + 4, b.h + 4); ctx.setLineDash([]); }
+}
+function refresh() { buildDigits(); $('sizeVal').textContent = `${digitCache.dw}×${digitCache.dh}px`; draw(); }
+
+// ---------- dragging ----------
+let dragging = false, dragOff = [0, 0];
+function ptr(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+cv.addEventListener('pointerdown', e => { const [px, py] = ptr(e); dragging = true; dragOff = [px - state.x, py - state.y]; cv.setPointerCapture(e.pointerId); draw(); });
+cv.addEventListener('pointermove', e => {
+  if (!dragging) return; const [px, py] = ptr(e);
+  let x = px - dragOff[0], y = py - dragOff[1];
+  if (state.snap) { x = Math.round(x / 4) * 4; y = Math.round(y / 4) * 4; }
+  state.x = Math.round(x); state.y = Math.round(y); draw();
+});
+cv.addEventListener('pointerup', () => { dragging = false; draw(); });
+
+// ---------- controls ----------
+$('bgFile').onchange = e => { const f = e.target.files[0]; if (!f) return; const img = new Image(); img.onload = () => { state.bg = img; draw(); }; img.src = URL.createObjectURL(f); };
+['zoom', 'panX', 'panY'].forEach(id => $(id).oninput = draw);
+['colH', 'colM', 'size', 'outline'].forEach(id => $(id).oninput = refresh);
+$('fontSel').onchange = e => { const [f, w] = e.target.value.split('|'); state.family = f; state.weight = w; state.customFont = null; refresh(); };
+$('fontFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const ff = new FontFace('UserFont', await f.arrayBuffer()); await ff.load(); document.fonts.add(ff); state.customFont = 'UserFont'; state.weight = '400'; refresh(); log(`Loaded font ${f.name}`); }
+  catch (err) { log('Could not load that font: ' + err.message); }
+};
+document.querySelectorAll('#layoutSeg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#layoutSeg button').forEach(x => x.classList.toggle('sel', x === b));
+  state.layout = b.dataset.v; refresh();
+});
+$('snapBtn').onclick = () => { state.snap = !state.snap; $('snapBtn').textContent = `Snap to grid: ${state.snap ? 'on' : 'off'}`; };
+$('centerBtn').onclick = () => { const b = clockBox(); state.x = Math.round((W - b.w) / 2); state.y = Math.round((H - b.h) / 2); draw(); };
+
+// ---------- encode ----------
+function canvasImg(c) { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height); return { w: c.width, h: c.height, data: d.data }; }
+function makeFaceBin() {
+  const bgC = document.createElement('canvas'); bgC.width = W; bgC.height = H; drawBackground(bgC.getContext('2d'));
+  const pv = document.createElement('canvas'); pv.width = MoyFace.PREVIEW_W; pv.height = MoyFace.PREVIEW_H;
+  const pg = pv.getContext('2d'); pg.imageSmoothingQuality = 'high'; pg.drawImage(cv, 0, 0, pv.width, pv.height);
+  return MoyFace.buildFace({
+    background: canvasImg(bgC),
+    digitSets: digitCache.sets.map(s => s.map(canvasImg)),
+    timeXY: timeXY(), timeSets: digitCache.timeSets, preview: canvasImg(pv)
+  });
+}
+$('downloadBtn').onclick = () => {
+  const bin = makeFaceBin(), a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([bin])); a.download = 'brillia_face.bin'; a.click();
+  log(`Built face file: ${bin.length} bytes`);
+};
+
+// ---------- Bluetooth (MoYoung V2) ----------
+const SVC = 0xfeea, CTRL = 0xfee2, NOTIFY = 0xfee3, DATA = 0xfee6;
+const BLOCK = 10240;               // the watch asks for the file in 10 KB blocks
+let dev = null, ctrl = null, dataCh = null, chunk = 244, waiters = [];
+
+function frame(cmd, payload = []) {
+  const len = 5 + payload.length;
+  return new Uint8Array([0xfe, 0xea, 0x20 | (len >> 8), len & 0xff, cmd, ...payload]);
+}
+const hex = a => [...a].map(b => b.toString(16).padStart(2, '0')).join(' ');
+
+function onNotify(e) {
+  const v = new Uint8Array(e.target.value.buffer);
+  if (v[0] !== 0xfe || v[1] !== 0xea) return;
+  const w = waiters.shift(); if (w) w(v);
+}
+function nextFrame(cmd, ms = 15000) {
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => { waiters = waiters.filter(f => f !== h); rej(new Error('watch did not answer (timeout)')); }, ms);
+    const h = v => { if (v[4] === cmd) { clearTimeout(t); res(v); } else waiters.unshift(h); };
+    waiters.push(h);
+  });
+}
+
+async function connect() {
+  if (!navigator.bluetooth) { log('Web Bluetooth is not available. Use Chrome on Android, over https.'); return; }
+  try {
+    dev = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }, { namePrefix: 'FireBoltt' }], optionalServices: [SVC] });
+    dev.addEventListener('gattserverdisconnected', () => { setConn(false); log('Watch disconnected.'); });
+    log(`Connecting to ${dev.name}…`);
+    const gatt = await dev.gatt.connect();
+    const svc = await gatt.getPrimaryService(SVC);
+    ctrl = await svc.getCharacteristic(CTRL);
+    dataCh = await svc.getCharacteristic(DATA);
+    const nt = await svc.getCharacteristic(NOTIFY);
+    nt.addEventListener('characteristicvaluechanged', onNotify);
+    await nt.startNotifications();
+    setConn(true); log('Connected.');
+  } catch (err) { log('Connect failed: ' + err.message); }
+}
+function setConn(on) {
+  $('connState').textContent = on ? `Connected: ${dev.name}` : 'Not connected'; $('connState').classList.toggle('on', on);
+  $('sendBtn').disabled = $('sendOrigBtn').disabled = !on; $('disconnectBtn').disabled = !on; $('connectBtn').disabled = on;
+}
+$('connectBtn').onclick = connect;
+$('disconnectBtn').onclick = () => dev && dev.gatt.disconnect();
+
+async function writeData(bytes) {
+  for (let o = 0; o < bytes.length; o += chunk) {
+    const part = bytes.subarray(o, Math.min(o + chunk, bytes.length));
+    try { await dataCh.writeValueWithoutResponse(part); }
+    catch (err) {
+      if (chunk > 20) { chunk = 20; log('Large packets refused, falling back to 20-byte packets (slower).'); o -= chunk; continue; }
+      throw err;
+    }
+  }
+}
+
+let busy = false;
+async function sendBin(bin) {
+  if (busy) return; busy = true; $('sendBtn').disabled = $('sendOrigBtn').disabled = true;
+  try {
+    const n = bin.length, blocks = Math.ceil(n / BLOCK);
+    log(`Sending ${n} bytes in ${blocks} blocks…`);
+    // Same opening sequence Da Fit used in the capture
+    const ba = nextFrame(0xba, 4000).catch(() => null);
+    await ctrl.writeValueWithoutResponse(frame(0xba, [0x01])); await ba;
+    let want = nextFrame(0x74);
+    await ctrl.writeValueWithoutResponse(frame(0x74, [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]));
+    while (true) {
+      const r = await want;
+      const idx = (r[5] << 8) | r[6];
+      if (idx === 0xffff) { log(`Watch reports transfer complete (check ${hex(r.slice(7, 9))}).`); break; }
+      if (idx >= blocks) throw new Error(`watch requested unexpected block ${idx}`);
+      want = nextFrame(0x74, 20000);
+      await writeData(bin.subarray(idx * BLOCK, Math.min((idx + 1) * BLOCK, n)));
+      $('prog').value = (idx + 1) / blocks;
+    }
+    await ctrl.writeValueWithoutResponse(frame(0x74, [0, 0, 0, 0]));
+    await ctrl.writeValueWithoutResponse(frame(0xb4, [0x11, 0xb5, 0x11, 0x00, 0x00]));
+    await ctrl.writeValueWithoutResponse(frame(0x19, [0x0b]));      // show the downloaded-face slot
+    log('Done. The new face should be on the watch now.');
+  } catch (err) {
+    log('Upload failed: ' + err.message + '. Restart the watch if it looks stuck; your other faces are unaffected.');
+  } finally { busy = false; $('sendBtn').disabled = $('sendOrigBtn').disabled = !(dev && dev.gatt.connected); }
+}
+$('sendBtn').onclick = () => { const b = makeFaceBin(); log(`Built face: ${b.length} bytes`); sendBin(b); };
+$('sendOrigBtn').onclick = async () => {
+  const f = $('binFile').files[0];
+  const buf = f ? new Uint8Array(await f.arrayBuffer()) : new Uint8Array(await (await fetch('dafit_captured_face.bin')).arrayBuffer());
+  try { MoyFace.parsePreview(buf); } catch (e) { log('That file is not a supported face: ' + e.message); return; }
+  sendBin(buf);
+};
+
+// ---------- start ----------
+(async () => {
+  try { const r = await fetch('sample_bg.png'); if (r.ok) { const img = new Image(); img.onload = () => { state.bg = img; draw(); }; img.src = URL.createObjectURL(await r.blob()); } } catch (e) {}
+  refresh();
+  if (!navigator.bluetooth) log('Note: this browser has no Web Bluetooth. Designing works; to send, open the page in Chrome on your Android phone.');
+})();
+</script>
+</body>
+</html>
