@@ -25,6 +25,17 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:testDebugUnitTest :app:lintDebug assembleRelease
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/reports/lint-results-*.html
+            app/build/reports/lint-results-*.txt
+          if-no-files-found: ignore
       - name: Sign release APK
         if: github.event_name != 'pull_request'
         uses: ilharp/sign-android-release@v2.0.0

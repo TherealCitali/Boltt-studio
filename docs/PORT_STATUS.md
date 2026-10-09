@@ -25,3 +25,7 @@ Target noted by the supplied prototype: Fire-Boltt Brillia, MOYOUNG-V2, firmware
 - Keep unresolved completion/check fields and `B4 11 B5 11` sequence explicit in the UI/documentation. Do not claim other faces are unaffected by failed transfers without hardware evidence.
 
 Avoid parallel Da Fit/watch connections while testing. Follow the source’s charged-watch guidance and have a recovery plan. Exporting a file does not prove that installing it on the watch is safe.
+
+## Captured dash compatibility exception
+
+CI exposed an invalid 1×1 dash pointer in the exact supplied `dafit_captured_face.bin`. The Python decoder silently yields a transparent pixel because the referenced row falls outside the file. Native parsing instead normally rejects such bounds violations. A SHA-256-gated exception for this one captured fixture substitutes a transparent dash; arbitrary malformed files still fail. Rebuilding emits a valid transparent dash image and matches the Python reference checksum.

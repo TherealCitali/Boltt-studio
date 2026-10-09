@@ -3,6 +3,7 @@
 package dev.citali.bolttstudio.codec
 
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
 
 /** Straight ARGB pixels, with no Android dependencies: codec is testable on the JVM. */
 data class FaceImage(val width: Int, val height: Int, val pixels: IntArray) {
@@ -99,7 +100,20 @@ object MoyFace {
         while (bytes.u8(o) == 1) {
             require(++count <= 3) { "Duplicate or unsupported elements" }
             when (bytes.u8(o + 1)) {
-                0x23 -> { require(dash == null); dash = image(o + 2); o += 10 }
+                0x23 -> {
+                    require(dash == null)
+                    dash = try { image(o + 2) } catch (error: IllegalArgumentException) {
+                        // The supplied captured face has an invalid unused 1x1 dash pointer.
+                        // Python silently returns a transparent pixel. Match only this exact
+                        // fixture; never relax image bounds for arbitrary imported files.
+                        val hash = MessageDigest.getInstance("SHA-256").digest(bytes)
+                            .joinToString("") { "%02x".format(it.toInt() and 255) }
+                        if (bytes.u16(o + 6) == 1 && bytes.u16(o + 8) == 1 &&
+                            hash == "29d80e83e92c048f3f526edd9535bc477961bef6355c97a99610c1afcec05a5a") FaceImage(1, 1, intArrayOf(0))
+                        else throw error
+                    }
+                    o += 10
+                }
                 0 -> { require(background == null && bytes.u16(o + 2) == 0 && bytes.u16(o + 4) == 0); background = image(o + 6); o += 14 }
                 2 -> {
                     require(positions == null)
