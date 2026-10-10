@@ -228,9 +228,11 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             }
         }
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)
-            .onGloballyPositioned { viewportTop[0] = it.positionInRoot().y }
-            .verticalScroll(scrollState).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(Modifier.fillMaxSize().padding(padding)) {
+        // Measure a non-scrolling child inside Scaffold padding, not the scrolling Column.
+        Spacer(Modifier.fillMaxWidth().height(1.dp)
+            .onGloballyPositioned { viewportTop[0] = it.positionInRoot().y })
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("BRILLIA / NATIVE PREVIEW", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text("Make time your own.", style = MaterialTheme.typography.headlineLarge)
             Image(frame.image.asImageBitmap(), "Watchface preview. Drag to move the selected clock group.",
@@ -300,6 +302,7 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                 }, onEditStyle = { jump(styleAnchor) }, depthAnchor = section(depthAnchor))
             Text("Session edits survive rotation, not process termination. Full .bin import and saved projects are still pending. Uploads stop when the app leaves the foreground; keep it open until finished.", style = MaterialTheme.typography.bodySmall)
             Text("${BuildConfig.VERSION_NAME} · ${BuildConfig.BUILD_COMMIT}\n${BuildConfig.BUILD_DATE}\nIndependent GPL-3.0 project; not an official Fire-Boltt or Da Fit app.", style = MaterialTheme.typography.labelSmall)
+        }
         }
     }
 }
