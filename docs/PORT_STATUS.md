@@ -1,4 +1,8 @@
-# Native port status · 0.6.0
+# Native port status · 0.7.0
+
+## Google Fonts library
+
+0.7.0 adds a bundled 1,723-family searchable/category-filterable index, explicit bounded HTTPS downloads with pinned Git blob checks and accompanying licenses, digit review before apply, offline reuse, and an independent draft font/license copy. TTF/OTF file imports remain. Internet permission is now present for explicit downloads only. The catalog is not live and exposes one default/upright face per eligible family, not all Google Fonts variants. See [GOOGLE_FONTS.md](GOOGLE_FONTS.md).
 
 ## Preview-first local studio
 

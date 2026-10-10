@@ -1,0 +1,99 @@
+package dev.citali.bolttstudio.ui
+
+import android.util.TypedValue
+import android.view.Gravity
+import android.widget.TextView
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.citali.bolttstudio.EditorState
+import dev.citali.bolttstudio.fonts.FontLibraryState
+
+@Composable
+fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryState = viewModel()) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(library.selected?.entry?.blob) { if (library.selected != null) listState.animateScrollToItem(1) }
+    var licenseOpen by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
+    val fonts = remember(library.catalog, library.query, library.category, library.downloadedOnly, library.saved) {
+        library.catalog?.search(library.query, library.category)?.filter { !library.downloadedOnly || it.blob in library.saved } ?: emptyList()
+    }
+    Column(Modifier.fillMaxSize()) {
+        OutlinedTextField(library.query, { library.query = it.take(100) }, singleLine = true,
+            label = { Text("Search Google Fonts") }, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                Text("${library.catalog?.fonts?.size ?: 0} families · offline catalog", style = MaterialTheme.typography.titleMedium)
+                Text("Download only the fonts you choose, from Google's public GitHub repository. No account or API key. The library uses one default/upright style per family.", style = MaterialTheme.typography.bodySmall)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("All", "Sans Serif", "Serif", "Display", "Handwriting", "Monospace").forEach { category ->
+                        FilterChip(library.category == category, { library.category = category }, label = { Text(category) })
+                    }
+                }
+                FilterChip(library.downloadedOnly, { library.downloadedOnly = !library.downloadedOnly }, label = { Text("Downloaded · ${library.saved.size}") })
+                if (library.saved.isNotEmpty()) TextButton(enabled = !library.busy, onClick = { confirmClear = true }) { Text("Clear downloads · keeps active draft font") }
+                Text(library.status, style = MaterialTheme.typography.bodySmall)
+                if (library.busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp))
+                if (library.busy && (library.status.startsWith("Downloading") || library.status.startsWith("Opening"))) {
+                    TextButton(onClick = { library.cancel() }) { Text("Cancel download") }
+                }
+            }
+            library.selected?.let { selected ->
+                item(key = "selected") {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(selected.entry.family, style = MaterialTheme.typography.titleLarge)
+                            val color = MaterialTheme.colorScheme.onPrimaryContainer.toArgb()
+                            AndroidView(factory = { TextView(it).apply {
+                                gravity = Gravity.CENTER; setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
+                            } }, update = {
+                                it.text = "0123456789"; it.typeface = library.preview; it.setTextColor(color)
+                                it.contentDescription = "Digits zero through nine in ${selected.entry.family}"
+                            }, modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp))
+                            Text("Check every digit. Use font updates the watch preview and saves a private copy with your draft.", style = MaterialTheme.typography.bodySmall)
+                            Button(enabled = canUse && !library.busy && !editor.loading, onClick = { library.useSelected(editor) }) { Text("Use font") }
+                            TextButton(onClick = { licenseOpen = !licenseOpen }) { Text(if (licenseOpen) "Hide font license" else "View font license") }
+                            if (licenseOpen) Text(selected.license, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+            item { Text("${fonts.size} results · family names shown in the app font until downloaded", style = MaterialTheme.typography.labelSmall) }
+            if (fonts.isEmpty() && library.catalog != null) item {
+                Text("No matching fonts. Try another name or category, or turn off Downloaded.", style = MaterialTheme.typography.bodyMedium)
+            }
+            items(fonts, key = { it.family }) { font ->
+                val downloaded = font.blob in library.saved
+                Card(Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                            Text(font.family, style = MaterialTheme.typography.titleMedium)
+                            Text("${font.category} · ${(font.bytes + 1023) / 1024} KB${if (downloaded) " · saved" else ""}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        OutlinedButton(enabled = !library.busy, onClick = { licenseOpen = false; library.select(font) }) {
+                            Text(if (downloaded) "Preview" else "Get")
+                        }
+                    }
+                }
+            }
+            if (library.saved.isNotEmpty()) item {
+                Text("Your active draft font is kept separately. Downloads use up to 64 MiB of private storage.", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+    if (confirmClear) AlertDialog(onDismissRequest = { confirmClear = false }, title = { Text("Clear downloaded fonts?") },
+        text = { Text("Library copies will be removed. Your active draft font and its license are kept, and you can download library fonts again.") },
+        confirmButton = { TextButton(onClick = { confirmClear = false; library.clearDownloads() }) { Text("Clear downloads") } },
+        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Cancel") } })
+}

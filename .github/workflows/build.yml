@@ -85,11 +85,11 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Preview-first studio with a resizable settings sheet and grouped pages, inspired by LunarTune.
-            Local draft restoration includes the photo, crop, geometry, custom font, colors and preview time.
-            Adaptive/themed icon and ShadowRPC-style Miuix elastic overscroll. Binary import removed by request.
-            Normal digital editing/export/BLE retained; no depth features restored or new analogue/widget encoding.
-            CI validates software behavior, not all physical watch configurations.
+            Searchable offline Google Fonts catalog (1,723 families), no API key.
+            Download selected default-style fonts and licenses, review all digits, then apply to the live editor preview.
+            Saved fonts work offline; the active font/license is retained with the local draft. TTF/OTF file import remains.
+            Preview-first UI, adaptive icon, normal digital export and BLE retained; no binary import or depth features.
+            CI validates software behavior, not every font on Android or physical watch compatibility.
           files: release-files/*
   prune-prereleases:
     needs: prerelease

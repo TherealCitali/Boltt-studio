@@ -29,6 +29,8 @@ class EditorState(application: Application) : AndroidViewModel(application) {
     var customTypeface by mutableStateOf<Typeface?>(null); private set
     private var photoName by saved(initial.photo)
     private var fontName by saved(initial.font)
+    var fontLabel by saved(initial.fontLabel); private set
+    var fontLicense by mutableStateOf<String?>(null); private set
     var design by saved(initial.design)
     var independent by saved(initial.independent)
     var editHours by saved(initial.editHours)
@@ -54,14 +56,14 @@ class EditorState(application: Application) : AndroidViewModel(application) {
     }
     private fun persist() {
         val data = DraftSettings(design, independent, editHours, previewMinute, outline, family,
-            useCustomFont, snap, hours, minutes, zoom, panX, panY, photoName, fontName)
+            useCustomFont, snap, hours, minutes, zoom, panX, panY, photoName, fontName, fontLabel)
         prefs.edit().putString("draft", data.encode()).apply()
     }
     init {
         viewModelScope.launch {
             val restoredAssets = withContext(Dispatchers.IO) {
                 // Only cleanup on launch, using the committed metadata. No active import can race this.
-                if (restored.isSuccess) directory.listFiles()?.filter { it.name != initial.photo && it.name != initial.font }?.forEach { it.delete() }
+                if (restored.isSuccess) directory.listFiles()?.filter { it.name != initial.photo && it.name != initial.font && it.name != initial.font + ".license" }?.forEach { it.delete() }
                 val photo = if (initial.photo.isNotEmpty()) runCatching {
                     val file = File(directory, initial.photo)
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -76,6 +78,9 @@ class EditorState(application: Application) : AndroidViewModel(application) {
                 Triple(photo ?: application.assets.open("sample_bg.png").use { BitmapFactory.decodeStream(it) }, font, photo != null)
             }
             background = restoredAssets.first; customTypeface = restoredAssets.second
+            fontLicense = withContext(Dispatchers.IO) {
+                runCatching { File(directory, initial.font + ".license").takeIf { initial.font.isNotEmpty() && it.length() in 1..65536 }?.readText() }.getOrNull()
+            }
             if (restored.isFailure) storageNotice = "Saved settings could not be restored. Defaults are shown; stored media has been kept."
             if (initial.photo.isNotEmpty() && !restoredAssets.third) {
                 photoName = ""; zoom = 1f; panX = 0f; panY = 0f
@@ -102,15 +107,23 @@ class EditorState(application: Application) : AndroidViewModel(application) {
         zoom = 1f; panX = 0f; panY = 0f
         storageNotice = ""
     }
-    suspend fun installFont(bytes: ByteArray) {
+    suspend fun installFont(bytes: ByteArray, label: String = "Imported font", licenseText: String? = null) {
         require(bytes.size in 12..4 * 1024 * 1024)
+        require(licenseText == null || licenseText.toByteArray(Charsets.UTF_8).size <= 65536)
         val (name, font) = withContext(Dispatchers.IO) {
             val file = File(directory, "${UUID.randomUUID()}.font")
             try {
                 FileOutputStream(file).use { it.write(bytes); it.fd.sync() }
+                if (licenseText != null) FileOutputStream(File(directory, file.name + ".license")).use {
+                    it.write(licenseText.toByteArray(Charsets.UTF_8)); it.fd.sync()
+                }
                 file.name to (Typeface.Builder(file).build() ?: error("Invalid font"))
             } catch (e: Exception) { file.delete(); throw e }
         }
-        customTypeface = font; fontName = name; useCustomFont = true; storageNotice = ""
+        // Publish file reference, display name and selected state together after all disk writes succeed.
+        savingEnabled = false
+        customTypeface = font; fontName = name; fontLabel = label.filterNot { it.isISOControl() }.take(120)
+        fontLicense = licenseText; useCustomFont = true; storageNotice = ""
+        savingEnabled = true; persist()
     }
 }

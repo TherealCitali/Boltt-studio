@@ -12,8 +12,8 @@ android {
         applicationId = "dev.citali.bolttstudio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 9
-        versionName = "0.6.0"
+        versionCode = 10
+        versionName = "0.7.0"
         val sha = providers.environmentVariable("GITHUB_SHA").orNull
             ?.takeIf { it.matches(Regex("[0-9a-fA-F]{40}")) }?.take(12) ?: "local"
         buildConfigField("String", "BUILD_COMMIT", "\"$sha\"")
@@ -27,6 +27,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    sourceSets.getByName("test").resources.srcDir("src/main/assets/google-fonts")
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21

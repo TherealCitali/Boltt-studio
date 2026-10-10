@@ -1,4 +1,4 @@
-# Studio workspace · 0.6.0
+# Studio workspace · 0.6.0 (extended in 0.7.0)
 
 ## Layout
 - The preview is a non-scrolling sibling of the settings sheet. Expand never overlays it.
@@ -15,6 +15,8 @@ EditorState is now an AndroidViewModel backed by versioned metadata in private S
 Photo and font imports write UUID-named private files, sync them, then publish their filename in metadata. Original document URIs are not retained. The photo copy is orientation-corrected and sampled to approximately 1024px maximum dimension before saving as PNG. Imports remain bounded (font <=4MiB); metadata paths are validated as private basenames. Stale media is collected on the next launch, retaining referenced assets. Draft parsing bounds geometry, crop and preview time, rejects future versions, and handles missing media with a visible fallback notice.
 
 Persisted: photo, font (also retained when switching temporarily to system fonts), crop, both clock groups' position/size/gap, independent/selected group, colors, outline, system family, custom-font switch, snapping, preview time.
+0.7.0 also retains the chosen font family label and its license beside the draft font. The Google Fonts library has its own downloaded copies; clearing those does not delete the active draft font. See GOOGLE_FONTS.md.
+
 Not persisted: BLE devices/connections, consent, pending transfers, pending export bytes across process death, diagnostics, multiple named projects. Clearing app data/uninstall removes the draft; old 0.5.x process-death losses cannot be recovered.
 
 ## Removed

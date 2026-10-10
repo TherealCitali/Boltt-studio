@@ -14,7 +14,7 @@ data class DraftSettings(
     val family: String = "sans-serif", val useCustomFont: Boolean = false,
     val snap: Boolean = false, val hours: Int = -1, val minutes: Int = -1,
     val zoom: Float = 1f, val panX: Float = 0f, val panY: Float = 0f,
-    val photo: String = "", val font: String = "",
+    val photo: String = "", val font: String = "", val fontLabel: String = "Imported font",
 ) {
     fun encode(): String {
         val p = Properties()
@@ -28,7 +28,7 @@ data class DraftSettings(
         put("independent", independent); put("editHours", editHours); put("previewMinute", previewMinute)
         put("outline", outline); put("family", family); put("useCustomFont", useCustomFont)
         put("snap", snap); put("hours", hours); put("minutes", minutes)
-        put("zoom", zoom); put("panX", panX); put("panY", panY); put("photo", photo); put("font", font)
+        put("zoom", zoom); put("panX", panX); put("panY", panY); put("photo", photo); put("font", font); put("fontLabel", fontLabel)
         return StringWriter().also { p.store(it, "Boltt Studio local draft") }.toString()
     }
     companion object {
@@ -54,6 +54,7 @@ data class DraftSettings(
                 hours = int("hours", -1) or 0xff000000.toInt(), minutes = int("minutes", -1) or 0xff000000.toInt(),
                 zoom = float("zoom", 1f, 1f..3f), panX = float("panX", 0f, -1f..1f), panY = float("panY", 0f, -1f..1f),
                 photo = asset("photo"), font = font,
+                fontLabel = p.getProperty("fontLabel", "Imported font").filterNot { it.isISOControl() }.take(120).ifBlank { "Imported font" },
             )
         }
     }

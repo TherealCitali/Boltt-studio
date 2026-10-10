@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.6.0 beta / persistent preview-first studio.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.7.0 beta / Google Fonts library.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -22,7 +22,8 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - 240 × 296 live preview with resizable hour/minute cells (default42×66).
 - Background image picker, EXIF orientation, zoom/pan crop adjustments and reset.
 - Linked or independent hour/minute size and movement, proportional scaling, width/height stretching, digit spacing, drag/snap and fit-to-canvas arrangements.
-- Three system font families plus TTF/OTF import, separate hour/minute RGB/hex colors and outline.
+- Three system font families, working TTF/OTF import, and a searchable **1,723-family Google Fonts catalog** with on-demand downloads and saved licenses.
+- Separate hour/minute RGB/hex colors and outline.
 - `.bin` export and direct current/captured-face upload. Binary import was removed by request.
 - Auto-restored local draft, including a private photo copy and custom font.
 - Always-visible preview above a resizable settings sheet; split view in wide windows.
@@ -32,7 +33,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Explicit watch selection, Android-version Bluetooth/scan permissions, service discovery, MTU-derived packet sizes, serialized GATT writes and watch-requested blocks.
 - Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
 
-Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editor changes are saved locally and restored after restart. Connections and pending transfers are never restored. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
+Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. The **Internet permission is used only for explicitly requested Google Fonts downloads**; there is no broad storage permission, account, analytics or cloud draft sync. Uploads require the app in the foreground. Editor changes are saved locally and restored after restart. Connections and pending transfers are never restored. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
 
 ## Finding the controls
 
@@ -41,6 +42,12 @@ The preview remains visible while the non-modal sheet opens separate **Photo**, 
 Depth Lab, stripe probes, transparency masks and both brush editors were removed at the user's request in0.5.0. Generated faces now use the normal two-table digital path (hour set0, minute set1); no depth/masking state can be re-enabled. This removal is not a confirmed diagnosis or hardware fix for the previously reported missing minutes.
 
 **Analogue faces are next, pending a supplied reference file.** A Base64 text file is acceptable. No analogue-hand encoding is guessed or enabled yet.
+
+## Google Fonts (no API key)
+
+Open **Type & color → Browse Google Fonts**, search/filter the bundled catalog, tap **Get**, review the digit sample, then **Use font**. The watch preview updates and a private font/license copy is saved with the draft. Downloaded entries open offline. Your working **Import TTF / OTF** picker is unchanged.
+
+The bundled snapshot contains 1,723 eligible Latin-supporting families, one default/upright TTF per family; it is not a live feed or every weight/italic variant. Downloads come from Google's public `google/fonts` GitHub repository at a pinned revision, not a Google account/API. Only selected font/license paths are requested. Photos, watchfaces and editor settings are never uploaded. Read [GOOGLE_FONTS.md](docs/GOOGLE_FONTS.md) for scope, storage and validation.
 
 ## Local draft and preview workspace
 

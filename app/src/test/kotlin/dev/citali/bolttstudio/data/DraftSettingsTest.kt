@@ -12,7 +12,7 @@ class DraftSettingsTest {
     @Test fun allEditsAndPrivateMediaNamesRoundTrip() {
         val draft = DraftSettings(ClockDesign(ClockGroup(8, 9, 33, 105, 4), ClockGroup(45, 168, 50, 80, 12)),
             true, false, 1439, false, "serif", true, true, 0xffee9933.toInt(), 0xff7799aa.toInt(),
-            2.2f, -.3f, .8f, "12345678-1234-1234-1234-123456789abc.png", "abcdef01-1234-1234-1234-123456789abc.font")
+            2.2f, -.3f, .8f, "12345678-1234-1234-1234-123456789abc.png", "abcdef01-1234-1234-1234-123456789abc.font", "Roboto Mono")
         assertEquals(draft, DraftSettings.decode(draft.encode()))
     }
     @Test fun invalidMetadataIsBoundedAndCannotReferenceExternalFiles() {
@@ -27,6 +27,11 @@ class DraftSettingsTest {
     }
     @Test fun missingOptionalValuesUseDefaults() {
         assertEquals(DraftSettings(), DraftSettings.decode("version=1"))
+    }
+    @Test fun olderDraftsKeepTheirFontWithoutNeedingALabel() {
+        val old = "version=1\nfont=abcdef01-1234-1234-1234-123456789abc.font\nuseCustomFont=true"
+        val restored = DraftSettings.decode(old)
+        assertTrue(restored.useCustomFont); assertEquals("Imported font", restored.fontLabel)
     }
     @Test fun unknownVersionsAndHugeMetadataAreRejected() {
         assertTrue(runCatching { DraftSettings.decode("version=2") }.isFailure)

@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.saveable.rememberSaveable
 import dev.citali.bolttstudio.ui.StudioTheme
 import dev.citali.bolttstudio.ui.StudioWorkspace
+import dev.citali.bolttstudio.ui.GoogleFontsPanel
 import dev.citali.bolttstudio.ui.SettingsDestination
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -160,12 +161,13 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
         }
     }
     var page by rememberSaveable { mutableStateOf("Design") }
-    BackHandler(enabled = page != "Design") { page = "Design" }
+    BackHandler(enabled = page != "Design") { page = if (page == "Google Fonts") "Style" else "Design" }
     StudioWorkspace(state, frame.image, page, page == "Design",
         if (watchUi.transferring) "${(watchUi.progress * 100).roundToInt()}%" else "Watch",
-        onBack = { page = "Design" }, onWatch = { page = "Watch" }) {
+        onBack = { page = if (page == "Google Fonts") "Style" else "Design" }, onWatch = { page = "Watch" }) {
         key(page) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
+            if (page == "Google Fonts") GoogleFontsPanel(state, canUse = !busy && !watchUi.transferring)
+            else Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (page) {
                     "Design" -> {
@@ -201,11 +203,17 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                                     onClick = { state.family = font; state.useCustomFont = false }, label = { Text(label) })
                             }
                         }
+                        FilledTonalButton(onClick = { page = "Google Fonts" }, modifier = Modifier.fillMaxWidth()) { Text("Browse Google Fonts") }
                         OutlinedButton(enabled = !busy && !watchUi.transferring, onClick = {
                             runCatching { importFont.launch(arrayOf("*/*")) }.onFailure { message = "No document picker available" }
                         }) { Text("Import TTF / OTF") }
                         if (state.customTypeface != null) FilterChip(selected = state.useCustomFont,
-                            onClick = { state.useCustomFont = true }, label = { Text("Use saved custom font") })
+                            onClick = { state.useCustomFont = true }, label = { Text("Use ${state.fontLabel}") })
+                        state.fontLicense?.let { license ->
+                            var showLicense by remember { mutableStateOf(false) }
+                            TextButton(onClick = { showLicense = !showLicense }) { Text(if (showLicense) "Hide saved font license" else "Saved font license") }
+                            if (showLicense) Text(license, style = MaterialTheme.typography.bodySmall)
+                        }
                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                             Text("Dark outline", Modifier.weight(1f)); Switch(state.outline, { state.outline = it })
                         }
@@ -237,7 +245,7 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                     "About" -> {
                         Text("A studio, not a session.", style = MaterialTheme.typography.headlineSmall)
                         Text("Photo, crop, clock geometry, fonts, colors, outline, snapping and preview time are restored when you reopen the app. One local draft is kept. Clearing app data or uninstalling deletes it. Edits lost before this version cannot be recovered.")
-                        Text("Private storage only. No cloud sync. Bluetooth connections, confirmations and pending uploads are never restored automatically.")
+                        Text("Drafts stay private; no cloud sync. Google Fonts downloads need internet and fetch only the selected font and license. Bluetooth connections, confirmations and pending uploads are never restored automatically.")
                         Text("Keep the app open until watch uploads finish. The BLE protocol is experimental and firmware-specific.")
                         Text("UI inspired by LunarTune by cognitiveshadows03. Elastic scrolling uses Miuix, as in ShadowRPC. Montserrat UI font: SIL Open Font License. Miuix: Apache-2.0. Licenses are bundled in the APK.", style = MaterialTheme.typography.bodySmall)
                         Text("${BuildConfig.VERSION_NAME} · ${BuildConfig.BUILD_COMMIT}\n${BuildConfig.BUILD_DATE}\nIndependent GPL-3.0 project; not an official Fire-Boltt or Da Fit app.", style = MaterialTheme.typography.labelSmall)
