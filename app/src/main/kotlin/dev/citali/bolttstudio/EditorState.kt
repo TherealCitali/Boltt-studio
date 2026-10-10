@@ -32,6 +32,12 @@ class EditorState(application: Application) : AndroidViewModel(application) {
     var fontLabel by saved(initial.fontLabel); private set
     var fontLicense by mutableStateOf<String?>(null); private set
     var design by saved(initial.design)
+    var stacked by saved(initial.stacked); private set
+    fun arrangeClock(stacked: Boolean) {
+        savingEnabled = false
+        this.stacked = stacked; design = design.arrange(stacked)
+        savingEnabled = true; persist()
+    }
     var independent by saved(initial.independent)
     var editHours by saved(initial.editHours)
     var previewMinute by saved(initial.previewMinute)
@@ -56,7 +62,7 @@ class EditorState(application: Application) : AndroidViewModel(application) {
     }
     private fun persist() {
         val data = DraftSettings(design, independent, editHours, previewMinute, outline, family,
-            useCustomFont, snap, hours, minutes, zoom, panX, panY, photoName, fontName, fontLabel)
+            useCustomFont, snap, hours, minutes, zoom, panX, panY, photoName, fontName, fontLabel, stacked)
         prefs.edit().putString("draft", data.encode()).apply()
     }
     init {

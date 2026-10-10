@@ -62,8 +62,46 @@ jobs:
           name: signed-apk
           path: release-files/*
           if-no-files-found: error
+  ui-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Keyboard, layout and colour-wheel UI regressions
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            chmod +x gradlew
+            adb shell settings put secure show_ime_with_hard_keyboard 1
+            ./gradlew :app:connectedDebugAndroidTest || RESULT=$?
+            mkdir -p ui-screenshots
+            adb pull /sdcard/Android/data/dev.citali.bolttstudio/files/ui-tests ui-screenshots/ || true
+            exit ${RESULT:-0}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ui-regression-reports
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            ui-screenshots/
+          if-no-files-found: ignore
   prerelease:
-    needs: build
+    needs: [build, ui-tests]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -85,11 +123,11 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Searchable offline Google Fonts catalog (1,723 families), no API key.
-            Download selected default-style fonts and licenses, review all digits, then apply to the live editor preview.
-            Saved fonts work offline; the active font/license is retained with the local draft. TTF/OTF file import remains.
-            Preview-first UI, adaptive icon, normal digital export and BLE retained; no binary import or depth features.
-            CI validates software behavior, not every font on Android or physical watch compatibility.
+            Restored prominent Stacked / Side-by-side clock layout selection with draft persistence.
+            Hue ring + saturation/brightness diamond replaces RGB sliders; hex entry retained.
+            Keyboard navigation now clears focus, uses explicit resize and a single IME inset owner.
+            Emulator regressions cover keyboard dismissal/page navigation, clock layout and wheel interactions.
+            Google Fonts, manual TTF/OTF, normal editor/export and BLE retained.
           files: release-files/*
   prune-prereleases:
     needs: prerelease

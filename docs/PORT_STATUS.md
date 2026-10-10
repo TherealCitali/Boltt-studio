@@ -1,4 +1,8 @@
-# Native port status · 0.7.0
+# Native port status · 0.7.1
+
+## Editor interaction fixes
+
+0.7.1 restores a prominent persistent layout selector, replaces RGB sliders with a colour wheel, and updates keyboard insets/focus handling. Emulator tests gate release publication. See [EDITOR_FIXES_071.md](EDITOR_FIXES_071.md).
 
 ## Google Fonts library
 

@@ -33,6 +33,12 @@ class DraftSettingsTest {
         val restored = DraftSettings.decode(old)
         assertTrue(restored.useCustomFont); assertEquals("Imported font", restored.fontLabel)
     }
+    @Test fun layoutSelectionPersistsAndOldSideBySideDraftsMigrate() {
+        val row = DraftSettings(design = ClockDesign().arrange(false), stacked = false)
+        assertEquals(row, DraftSettings.decode(row.encode()))
+        assertFalse(DraftSettings.decode("version=1\nh.x=15\nh.y=115\nm.x=125\nm.y=115").stacked)
+        assertTrue(DraftSettings.decode("version=1").stacked)
+    }
     @Test fun unknownVersionsAndHugeMetadataAreRejected() {
         assertTrue(runCatching { DraftSettings.decode("version=2") }.isFailure)
         assertTrue(runCatching { DraftSettings.decode("x".repeat(16385)) }.isFailure)

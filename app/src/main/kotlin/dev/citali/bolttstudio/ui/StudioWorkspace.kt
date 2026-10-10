@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,7 +34,7 @@ fun StudioWorkspace(state: EditorState, image: Bitmap, pageTitle: String, atHome
     var fraction by rememberSaveable { mutableFloatStateOf(.49f) }
     val colors = MaterialTheme.colorScheme
     Surface(Modifier.fillMaxSize(), color = colors.background) {
-        Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
+        Column(Modifier.fillMaxSize().testTag("studio-workspace").windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout)).imePadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.ic_boltt), null, Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)))
                 Spacer(Modifier.width(10.dp))
@@ -57,7 +58,7 @@ fun StudioWorkspace(state: EditorState, image: Bitmap, pageTitle: String, atHome
                 val actualFraction = fraction.coerceIn(minFraction, maxFraction)
                 val sheetHeight = availableHeight * actualFraction
                 val preview: @Composable (Modifier) -> Unit = { modifier ->
-                    Column(modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(modifier.testTag("preview-region").padding(horizontal = 16.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()
                             .clip(RoundedCornerShape(28.dp))
                             .background(Brush.radialGradient(listOf(colors.primaryContainer.copy(alpha = .7f), colors.background))),
@@ -84,7 +85,7 @@ fun StudioWorkspace(state: EditorState, image: Bitmap, pageTitle: String, atHome
                     }
                 }
                 val sheet: @Composable (Modifier) -> Unit = { modifier ->
-                    Surface(modifier, shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                    Surface(modifier.testTag("settings-sheet"), shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
                         color = colors.surfaceContainerLow, tonalElevation = 2.dp) {
                         Column {
                             Column(Modifier.fillMaxWidth().then(if (wide) Modifier else Modifier.pointerInput(totalPx, maxFraction) {

@@ -1,0 +1,8 @@
+# Editor fixes · 0.7.1
+
+- Prominent Stacked / Side by side segmented control at the top of Clock layout. Selection arranges the existing two live groups, fitting dimensions if needed. Selected mode is saved with the draft; older drafts infer the initial mode from group placement. Independent sizing, fonts and colors are preserved.
+- RGB component sliders replaced by a hue ring and a rotated saturation/brightness square (diamond) for each clock group. Touch mapping is shared with pure tested geometry. Presets and precise hex input remain. Accessible wheel actions adjust hue, saturation and brightness without gestures. Colors remain opaque; transparency/depth does not return.
+- Explicit adjustResize and separate system-bar/cutout padding + one IME-padding owner. Page changes clear text-field focus and dismiss the keyboard. Search Done and hex Apply/Done explicitly dismiss it too. Sheet height is derived from current constraints, not a saved keyboard-sized height.
+- The supplied screenshot establishes a compressed workspace after keyboard use, not a proven single cause. These changes cover focus lifecycle and inset handling; emulator regression checks verify restoration after search keyboard dismissal and navigation. OEM-specific behavior still needs confirmation on the reported device.
+- CI adds an API35 emulator gate before publishing. It exercises keyboard open/close with hardware-keyboard IME enabled, validates restored sheet/preview heights, interacts with both layout choices, taps the wheel and submits a hex value. Captured emulator images are available with UI test artifacts.
+- Existing Google Fonts, TTF import, draft media, export and BLE are retained; no watch protocol changes.

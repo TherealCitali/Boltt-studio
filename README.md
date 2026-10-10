@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.7.0 beta / Google Fonts library.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.7.1 beta / editor interaction fixes.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -42,6 +42,10 @@ The preview remains visible while the non-modal sheet opens separate **Photo**, 
 Depth Lab, stripe probes, transparency masks and both brush editors were removed at the user's request in0.5.0. Generated faces now use the normal two-table digital path (hour set0, minute set1); no depth/masking state can be re-enabled. This removal is not a confirmed diagnosis or hardware fix for the previously reported missing minutes.
 
 **Analogue faces are next, pending a supplied reference file.** A Base64 text file is acceptable. No analogue-hand encoding is guessed or enabled yet.
+
+## Layout, keyboard and colour controls
+
+Clock layout now starts with an explicit **Stacked / Side by side** selector. Custom colours use a **hue ring + saturation/brightness diamond**, with hex entry retained. Keyboard dismissal/navigation is covered by an API35 emulator regression gate. See [EDITOR_FIXES_071.md](docs/EDITOR_FIXES_071.md).
 
 ## Google Fonts (no API key)
 

@@ -15,11 +15,12 @@ data class DraftSettings(
     val snap: Boolean = false, val hours: Int = -1, val minutes: Int = -1,
     val zoom: Float = 1f, val panX: Float = 0f, val panY: Float = 0f,
     val photo: String = "", val font: String = "", val fontLabel: String = "Imported font",
+    val stacked: Boolean = true,
 ) {
     fun encode(): String {
         val p = Properties()
         fun put(k: String, v: Any) { p.setProperty(k, v.toString()) }
-        put("version", 1)
+        put("version", 1); put("stacked", stacked)
         fun group(prefix: String, g: ClockGroup) {
             put("$prefix.x", g.x); put("$prefix.y", g.y); put("$prefix.width", g.width)
             put("$prefix.height", g.height); put("$prefix.gap", g.gap)
@@ -45,8 +46,9 @@ data class DraftSettings(
                 int("$prefix.width", g.width), int("$prefix.height", g.height), int("$prefix.gap", g.gap)).bounded()
             fun asset(k: String) = p.getProperty(k, "").takeIf { it.matches(Regex("[a-f0-9-]{36}\\.(png|font)")) } ?: ""
             val font = asset("font")
+            val design = ClockDesign(group("h", defaults.design.hours), group("m", defaults.design.minutes))
             return DraftSettings(
-                design = ClockDesign(group("h", defaults.design.hours), group("m", defaults.design.minutes)),
+                design = design, stacked = bool("stacked", kotlin.math.abs(design.hours.y - design.minutes.y) >= kotlin.math.abs(design.hours.x - design.minutes.x)),
                 independent = bool("independent", false), editHours = bool("editHours", true),
                 previewMinute = int("previewMinute", 609).coerceIn(0, 1439), outline = bool("outline", true),
                 family = p.getProperty("family")?.takeIf { it in listOf("sans-serif", "serif", "monospace") } ?: "sans-serif",

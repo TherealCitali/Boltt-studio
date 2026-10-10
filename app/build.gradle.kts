@@ -12,8 +12,9 @@ android {
         applicationId = "dev.citali.bolttstudio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 10
-        versionName = "0.7.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        versionCode = 11
+        versionName = "0.7.1"
         val sha = providers.environmentVariable("GITHUB_SHA").orNull
             ?.takeIf { it.matches(Regex("[0-9a-fA-F]{40}")) }?.take(12) ?: "local"
         buildConfigField("String", "BUILD_COMMIT", "\"$sha\"")
@@ -41,6 +42,10 @@ kotlin {
     }
 }
 dependencies {
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.12.0-beta02")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.12.0-beta02")
     // Same elastic edge effect as ShadowRPC; no Miuix theme or widgets.
     implementation(libs.miuix.ui)
     implementation(libs.core.ktx)

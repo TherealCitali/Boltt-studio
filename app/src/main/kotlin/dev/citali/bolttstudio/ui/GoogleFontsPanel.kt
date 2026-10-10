@@ -1,5 +1,10 @@
 package dev.citali.bolttstudio.ui
 
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import android.util.TypedValue
 import android.view.Gravity
 import android.widget.TextView
@@ -21,6 +26,8 @@ import dev.citali.bolttstudio.fonts.FontLibraryState
 
 @Composable
 fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryState = viewModel()) {
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     LaunchedEffect(library.selected?.entry?.blob) { if (library.selected != null) listState.animateScrollToItem(1) }
     var licenseOpen by remember { mutableStateOf(false) }
@@ -29,7 +36,8 @@ fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryS
         library.catalog?.search(library.query, library.category)?.filter { !library.downloadedOnly || it.blob in library.saved } ?: emptyList()
     }
     Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(library.query, { library.query = it.take(100) }, singleLine = true,
+        OutlinedTextField(library.query, { library.query = it.take(100) }, singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focus.clearFocus(); keyboard?.hide() }),
             label = { Text("Search Google Fonts") }, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp))
         LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {

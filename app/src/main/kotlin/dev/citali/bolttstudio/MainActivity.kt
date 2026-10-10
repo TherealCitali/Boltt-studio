@@ -13,6 +13,9 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import dev.citali.bolttstudio.ui.ColorWheelPicker
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.ViewModelProvider
 import dev.citali.bolttstudio.bluetooth.WatchViewModel
@@ -161,6 +164,9 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
         }
     }
     var page by rememberSaveable { mutableStateOf("Design") }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(page) { focusManager.clearFocus(force = true); keyboard?.hide() }
     BackHandler(enabled = page != "Design") { page = if (page == "Google Fonts") "Style" else "Design" }
     StudioWorkspace(state, frame.image, page, page == "Design",
         if (watchUi.transferring) "${(watchUi.progress * 100).roundToInt()}%" else "Watch",
@@ -218,9 +224,9 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                             Text("Dark outline", Modifier.weight(1f)); Switch(state.outline, { state.outline = it })
                         }
                         HorizontalDivider()
-                        ColorPicker("Hours", state.hours) { state.hours = it }
+                        ColorWheelPicker("Hours", state.hours) { state.hours = it }
                         HorizontalDivider()
-                        ColorPicker("Minutes", state.minutes) { state.minutes = it }
+                        ColorWheelPicker("Minutes", state.minutes) { state.minutes = it }
                     }
                     "Export" -> {
                         Text("Ready when you are.", style = MaterialTheme.typography.headlineSmall)
@@ -261,31 +267,4 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
 }
 @Composable private fun Control(label: String, value: Float, range: ClosedFloatingPointRange<Float>, update: (Float) -> Unit) {
     Text(label); Slider(value = value.coerceIn(range), onValueChange = update, valueRange = range)
-}
-@Composable private fun ColorPicker(label: String, selected: Int, update: (Int) -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    var hex by remember(selected) { mutableStateOf("%06X".format(selected and 0xffffff)) }
-    Text(label, style = MaterialTheme.typography.titleMedium)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf("White" to 0xffffffff.toInt(), "Orange" to 0xffff7a2f.toInt(), "Mint" to 0xff73e2bb.toInt()).forEach { (name, color) ->
-            FilterChip(selected = selected == color, onClick = { update(color) }, label = { Text(name) })
-        }
-    }
-    OutlinedButton(onClick = { open = !open }) { Text(if (open) "Close custom color" else "Custom · #%06X".format(selected and 0xffffff)) }
-    if (open) {
-        val rgb = hex.takeIf { it.length == 6 }?.toIntOrNull(16)
-        Surface(color = Color(selected), modifier = Modifier.fillMaxWidth().height(32.dp), shape = MaterialTheme.shapes.medium) {}
-        OutlinedTextField(value = hex, onValueChange = { value ->
-            hex = value.removePrefix("#").filter { it in "0123456789abcdefABCDEF" }.take(6).uppercase()
-        }, label = { Text("Hex RGB · 6 digits") }, singleLine = true, isError = rgb == null, modifier = Modifier.fillMaxWidth())
-        TextButton(enabled = rgb != null, onClick = { update(0xff000000.toInt() or (rgb ?: 0)) }) { Text("Apply hex") }
-        listOf("Red" to 16, "Green" to 8, "Blue" to 0).forEach { (name, shift) ->
-            val component = (selected ushr shift) and 255
-            Text("$name · $component")
-            Slider(value = component.toFloat(), valueRange = 0f..255f, onValueChange = {
-                update((selected and (255 shl shift).inv()) or (it.roundToInt() shl shift))
-            })
-        }
-        Text("Watch colors are quantized to RGB565.", style = MaterialTheme.typography.bodySmall)
-    }
 }

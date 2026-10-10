@@ -11,6 +11,15 @@ import kotlin.math.roundToInt
 
 @Composable
 fun ClockControls(state: EditorState) {
+    Text("Clock layout", style = MaterialTheme.typography.titleMedium)
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        listOf(true to "Stacked", false to "Side by side").forEachIndexed { index, (stacked, label) ->
+            SegmentedButton(selected = state.stacked == stacked, onClick = { state.arrangeClock(stacked) },
+                shape = SegmentedButtonDefaults.itemShape(index, 2)) { Text(label) }
+        }
+    }
+    Text(if (state.stacked) "Hours above minutes" else "Hours left · minutes right", style = MaterialTheme.typography.bodySmall)
+
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Text("Independent hours / minutes", Modifier.weight(1f))
         Switch(state.independent, {
@@ -55,17 +64,13 @@ fun ClockControls(state: EditorState) {
         else (group.y - minOf(h.y, m.y))..(group.y + 296 - maxOf(h.y + h.height, m.y + m.height))
     PixelSlider("Position X", group.x, xRange) { move(x = it) }
     PixelSlider("Position Y", group.y, yRange) { move(y = it) }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { state.design = state.design.arrange(true) }) { Text("Stack to fit") }
-        OutlinedButton(onClick = { state.design = state.design.arrange(false) }) { Text("Row to fit") }
-    }
     Text("Shape presets · preserves your selected/imported font", style = MaterialTheme.typography.labelMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         TextButton(onClick = { resize(34, 110) }) { Text("Tall") }
         TextButton(onClick = { resize(54, 62) }) { Text("Wide") }
         TextButton(onClick = { resize(28, 82) }) { Text("Condensed") }
     }
-    TextButton(onClick = { state.design = ClockDesign(); state.independent = false; state.editHours = true }) { Text("Reset size & position") }
+    TextButton(onClick = { state.design = ClockDesign(); state.arrangeClock(true); state.design = ClockDesign(); state.independent = false; state.editHours = true }) { Text("Reset size & position") }
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Text("Snap dragging to 4 px", Modifier.weight(1f)); Switch(state.snap, { state.snap = it })
     }
