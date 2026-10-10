@@ -84,13 +84,7 @@ jobs:
           target: google_apis
           profile: pixel_2
           disable-animations: true
-          script: |
-            chmod +x gradlew
-            adb shell settings put secure show_ime_with_hard_keyboard 1
-            ./gradlew :app:connectedDebugAndroidTest || RESULT=$?
-            mkdir -p ui-screenshots
-            adb pull /sdcard/Android/data/dev.citali.bolttstudio/files/ui-tests ui-screenshots/ || true
-            exit ${RESULT:-0}
+          script: chmod +x gradlew; adb shell settings put secure show_ime_with_hard_keyboard 1; ./gradlew :app:connectedDebugAndroidTest; RESULT=$?; mkdir -p ui-screenshots; adb pull /sdcard/Android/data/dev.citali.bolttstudio/files/ui-tests ui-screenshots/ || true; exit $RESULT
       - uses: actions/upload-artifact@v7
         if: always()
         with:
