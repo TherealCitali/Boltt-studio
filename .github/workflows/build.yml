@@ -21,7 +21,7 @@ jobs:
         run: |
           python -m pip install Pillow==12.1.1
           python roundtrip_test.py
-      - name: Test codec and build
+      - name: Test codec, transfer protocol and build
         run: |
           chmod +x gradlew
           ./gradlew :app:testDebugUnitTest :app:lintDebug assembleRelease
@@ -85,8 +85,9 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Native Kotlin/Compose editor and .bin export milestone.
-            Bluetooth transfer is not included in this native build. Hardware compatibility is not established by CI.
+            Native Kotlin/Compose editor with drag/snap, font import, RGB controls and experimental BLE upload.
+            Test the original captured Da Fit face first, with Da Fit stopped and the watch charged.
+            CI checks codec/protocol logic; it does not establish physical watch compatibility or safe recovery.
             Preserved HTML/Python prototypes and protocol notes remain in the repository.
           files: release-files/*
   prune-prereleases:

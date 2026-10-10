@@ -7,13 +7,18 @@ import kotlin.math.max
 import kotlin.math.min
 
 object FaceRenderer {
+    // Rendering runs on the Compose UI thread. Reuse glyphs while dragging/cropping.
+    private data class GlyphKey(val family: String, val custom: Typeface?, val hours: Int, val minutes: Int, val outline: Boolean)
+    private var glyphKey: GlyphKey? = null
+    private var glyphs = emptyList<List<Bitmap>>()
+    private var glyphImages = emptyList<List<FaceImage>>()
     data class Frame(val image: Bitmap, val face: MoyFace.Face)
     fun Bitmap.faceImage(): FaceImage {
         val data = IntArray(width * height); getPixels(data, 0, width, 0, 0, width, height)
         return FaceImage(width, height, data)
     }
     fun render(background: Bitmap?, x: Int, y: Int, stacked: Boolean, family: String,
-        hourColor: Int, minuteColor: Int, outline: Boolean, zoom: Float, panX: Float, panY: Float): Frame {
+        hourColor: Int, minuteColor: Int, outline: Boolean, zoom: Float, panX: Float, panY: Float, customTypeface: Typeface? = null): Frame {
         val bg = Bitmap.createBitmap(240, 296, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bg); canvas.drawColor(Color.BLACK)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -29,7 +34,7 @@ object FaceRenderer {
         fun digit(n: Int, color: Int): Bitmap {
             val big = Bitmap.createBitmap(126, 198, Bitmap.Config.ARGB_8888); val c = Canvas(big)
             val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = Typeface.create(family, Typeface.BOLD); textSize = 66 * 2.2f; textAlign = Paint.Align.CENTER
+                typeface = customTypeface ?: Typeface.create(family, Typeface.BOLD); textSize = 66 * 2.2f; textAlign = Paint.Align.CENTER
                 strokeJoin = Paint.Join.ROUND
             }
             val baseline = 99 - (p.fontMetrics.ascent + p.fontMetrics.descent) / 2
@@ -48,7 +53,14 @@ object FaceRenderer {
             }
             big.recycle(); return result
         }
-        val digits = listOf(hourColor, minuteColor).map { color -> (0..9).map { digit(it, color) } }
+        val key = GlyphKey(family, customTypeface, hourColor, minuteColor, outline)
+        if (glyphKey != key) {
+            glyphs.flatten().forEach { it.recycle() }
+            glyphs = listOf(hourColor, minuteColor).map { color -> (0..9).map { digit(it, color) } }
+            glyphImages = glyphs.map { set -> set.map { it.faceImage() } }
+            glyphKey = key
+        }
+        val digits = glyphs
         val offsets = if (stacked) listOf(Point(0, 0), Point(50, 0), Point(0, 80), Point(50, 80))
             else listOf(Point(0, 0), Point(50, 0), Point(111, 0), Point(161, 0))
         val px = x.coerceIn(0, if (stacked) 148 else 37); val py = y.coerceIn(0, if (stacked) 150 else 230)
@@ -56,8 +68,8 @@ object FaceRenderer {
         val preview = bg.copy(Bitmap.Config.ARGB_8888, true); val pc = Canvas(preview)
         listOf(1, 0, 0, 9).forEachIndexed { i, digit -> pc.drawBitmap(digits[sets[i]][digit], positions[i].x.toFloat(), positions[i].y.toFloat(), paint) }
         val small = Bitmap.createScaledBitmap(preview, 140, 163, true)
-        val face = MoyFace.Face(bg.faceImage(), digits.map { set -> set.map { it.faceImage() } }, positions, sets, small.faceImage(), FaceImage(1, 1, intArrayOf(0)))
-        digits.flatten().forEach { it.recycle() }; bg.recycle(); small.recycle()
+        val face = MoyFace.Face(bg.faceImage(), glyphImages, positions, sets, small.faceImage(), FaceImage(1, 1, intArrayOf(0)))
+        bg.recycle(); small.recycle()
         return Frame(preview, face)
     }
 }

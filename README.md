@@ -13,19 +13,23 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **Beta / first native milestone.** The Kotlin app edits and exports `.bin` files locally. **Native Bluetooth transfer is not implemented yet.** CI validates codec behavior against the reference files, not compatibility or safety on a physical watch.
+> **0.2 beta / experimental native BLE.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
 - Kotlin + Jetpack Compose Material 3; **not a WebView wrapper**.
 - Package `dev.citali.bolttstudio`, Android 8.0+, JDK 21.
 - 240 × 296 live preview with fixed 42 × 66 digit cells.
-- Background image picker, zoom and crop adjustments.
-- Stacked or single-line clock, position controls, centering, three system font families, separate hour/minute color choices, outline.
+- Background image picker, EXIF orientation, zoom/pan crop adjustments and reset.
+- Stacked or single-line clock, drag/4px snap, bounded position controls and centering.
+- Three system font families plus TTF/OTF import, separate hour/minute RGB/hex colors and outline.
 - `.bin` export through Android’s document picker; no broad storage permission.
 - Bounds-checked pure-Kotlin API `0x23` codec, tested against both supplied face files and Python-generated checksums.
 
-The native app requests **no Bluetooth or Internet permissions** at this milestone. Editing state survives configuration changes, but project persistence after process death is not yet implemented.
+- Explicit watch selection, Android-version Bluetooth/scan permissions, service discovery, MTU-derived packet sizes, serialized GATT writes and watch-requested blocks.
+- Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
+
+Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editing state survives rotation, not process death. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
 
 ## Preserved reference implementation
 
@@ -58,10 +62,10 @@ GitHub signing uses repository secrets `KEYSTORE`, `KEY_ALIAS`, `KEYSTORE_PASSWO
 
 ## Next native milestones
 
-1. Custom TTF/OTF font import, drag/snap editing, and saved projects.
-2. User-facing `.bin` import and format diagnostics.
-3. Native BLE discovery, Android-version permissions, serialized GATT writes, MTU negotiation, cancellation and transfer state machine.
-4. Hardware validation on the documented Brillia firmware before broadening compatibility.
+1. Hardware validation on the documented Brillia firmware; completion-check/finalization research.
+2. Saved projects and process-death restoration.
+3. User-facing `.bin` import and format diagnostics.
+4. Broader compatibility only after device-specific evidence.
 
 ## License and provenance
 
