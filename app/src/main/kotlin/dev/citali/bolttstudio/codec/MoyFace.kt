@@ -89,7 +89,12 @@ object MoyFace {
 
     fun parse(bytes: ByteArray): Face {
         require(bytes.size in 18..MAX_FILE_BYTES && bytes.u16(0) == 0x23) { "Not a supported API 0x23 face" }
-        fun image(o: Int) = decodeImage(bytes, bytes.u32(o), bytes.u16(o + 4), bytes.u16(o + 6))
+        fun image(o: Int): FaceImage {
+            val width = bytes.u16(o + 4); val height = bytes.u16(o + 6)
+            // Reject oversized face assets before allocating all decoded glyph tables.
+            require(width in 1..WIDTH && height in 1..HEIGHT) { "Face image exceeds the watch canvas" }
+            return decodeImage(bytes, bytes.u32(o), width, height)
+        }
         val preview = image(4); val digitOffset = bytes.u16(12); val elementOffset = bytes.u16(14)
         require(digitOffset >= 16 && elementOffset >= digitOffset + 2 && elementOffset < bytes.size)
         require((elementOffset - digitOffset - 2) % 83 == 0)

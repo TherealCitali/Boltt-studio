@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.5.0 beta / digital editor.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.5.1 beta / digital editor and binary upload.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -23,7 +23,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Background image picker, EXIF orientation, zoom/pan crop adjustments and reset.
 - Linked or independent hour/minute size and movement, proportional scaling, width/height stretching, digit spacing, drag/snap and fit-to-canvas arrangements.
 - Three system font families plus TTF/OTF import, separate hour/minute RGB/hex colors and outline.
-- `.bin` export through Android’s document picker; no broad storage permission.
+- `.bin` export and **Import .bin face** under Watch, with validation, embedded thumbnail, size/SHA-256 and original-byte upload. No broad storage permission.
 - Bounds-checked pure-Kotlin API `0x23` codec, tested against both supplied face files and Python-generated checksums.
 
 - Explicit watch selection, Android-version Bluetooth/scan permissions, service discovery, MTU-derived packet sizes, serialized GATT writes and watch-requested blocks.
@@ -38,6 +38,12 @@ Pinned **Photo / Clock / Watch** buttons jump directly to each section. Clock co
 Depth Lab, stripe probes, transparency masks and both brush editors were removed at the user's request in0.5.0. Generated faces now use the normal two-table digital path (hour set0, minute set1); no depth/masking state can be re-enabled. This removal is not a confirmed diagnosis or hardware fix for the previously reported missing minutes.
 
 **Analogue faces are next, pending a supplied reference file.** A Base64 text file is acceptable. No analogue-hand encoding is guessed or enabled yet.
+
+## Import and send a custom .bin
+
+In **Watch**, choose **Import .bin face → Choose .bin file**. The file is checked locally and kept as an immutable snapshot. Review its embedded thumbnail, byte size and SHA-256, connect to your watch, then choose **Send imported face…** and confirm. It sends the original bytes, not a rebuilt face; your editor design is unchanged.
+
+Import-for-upload currently supports validated API0x23 digital faces up to2MiB (an application bound, not a measured watch limit). Raw binary is required, not Base64 text. Unknown analogue/other element layouts are rejected until their format is understood. Structural validation does not guarantee firmware compatibility. See [IMPORTING.md](docs/IMPORTING.md).
 
 ## Preserved reference implementation
 
@@ -73,7 +79,7 @@ GitHub signing uses repository secrets `KEYSTORE`, `KEY_ALIAS`, `KEYSTORE_PASSWO
 1. Inspect the supplied analogue reference before implementing live hands.
 2. Hardware validation on the documented Brillia firmware; completion-check/finalization research.
 3. Saved projects and process-death restoration.
-4. User-facing `.bin` import and format diagnostics.
+4. Editable `.bin` project import and broader format diagnostics.
 5. Broader compatibility only after device-specific evidence.
 
 ## License and provenance

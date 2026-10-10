@@ -279,7 +279,7 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             HorizontalDivider()
             Spacer(Modifier.height(1.dp).then(section(watchAnchor)))
             WatchPanel(watch, frame.face)
-            Text("Session edits survive rotation, not process termination. Full .bin import and saved projects are still pending. Uploads stop when the app leaves the foreground; keep it open until finished.", style = MaterialTheme.typography.bodySmall)
+            Text("Session edits survive rotation, not process termination. Imported .bin files can be sent unchanged under Watch; editable project import and saved projects are still pending. Uploads stop when the app leaves the foreground; keep it open until finished.", style = MaterialTheme.typography.bodySmall)
             Text("${BuildConfig.VERSION_NAME} · ${BuildConfig.BUILD_COMMIT}\n${BuildConfig.BUILD_DATE}\nIndependent GPL-3.0 project; not an official Fire-Boltt or Da Fit app.", style = MaterialTheme.typography.labelSmall)
         }
         }

@@ -19,7 +19,7 @@ import dev.citali.bolttstudio.bluetooth.WatchViewModel
 import dev.citali.bolttstudio.codec.MoyFace
 import kotlinx.coroutines.*
 
-private data class PendingUpload(val label: String, val bytes: ByteArray, val modifiedClock: Boolean = false)
+private data class PendingUpload(val label: String, val bytes: ByteArray, val modifiedClock: Boolean = false, val importedHash: String? = null)
 
 @Composable
 fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
@@ -121,18 +121,26 @@ fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
             }
         }
     }
-    pending?.let { (label, bytes, modifiedClock) ->
+    ImportFacePanel(canPick = !ui.transferring && !ui.connecting && !preparing,
+        canSend = ui.ready && !ui.transferring && !preparing, onUpload = { name, imported ->
+            acknowledged = false
+            pending = PendingUpload("Imported: $name", imported.uploadBytes(),
+                modifiedClock = imported.face.digits.size > 2 || imported.face.digits.flatten().any { it.width != 42 || it.height != 66 },
+                importedHash = imported.sha256)
+        })
+    pending?.let { (label, bytes, modifiedClock, importedHash) ->
         AlertDialog(onDismissRequest = { pending = null }, title = { Text("Send watchface?") },
             text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("$label · ${bytes.size} bytes\nTarget: ${ui.selected}")
-                if (modifiedClock) Text("This face uses resized glyphs. The live-time field remains intact, but these new configurations need device testing. Inspect changing digits and screen wake; use a default-size face as a control.")
+                importedHash?.let { Text("Import upload — original bytes, not rebuilt.\nSHA-256: $it", style = MaterialTheme.typography.bodySmall) }
+                if (modifiedClock) Text("This face uses resized glyphs or additional digit tables. The live-time field remains intact, but these new configurations need device testing. Inspect changing digits and screen wake; use a default-size face as a control.")
                 Text("This reverse-engineered protocol can leave a partial or unusable face if interrupted or incompatible. The completion-check algorithm and finalization fields are not fully understood. There is no guaranteed rollback.")
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(acknowledged, { acknowledged = it })
                     Text("I selected my Brillia, stopped Da Fit, charged above 30%, and accept this test risk.", style = MaterialTheme.typography.bodySmall)
                 }
             } },
-            confirmButton = { TextButton(enabled = acknowledged && ui.ready && !ui.transferring, onClick = { pending = null; watch.upload(bytes, label) }) { Text("Send now") } },
+            confirmButton = { TextButton(enabled = acknowledged && ui.ready && !ui.transferring, onClick = { pending = null; watch.upload(bytes, if (importedHash != null) "Imported binary face" else label) }) { Text("Send now") } },
             dismissButton = { TextButton(onClick = { pending = null }) { Text("Cancel") } })
     }
 }

@@ -85,9 +85,9 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Normal photo and digital-clock editor with independent sizing/placement, fonts, colors and BLE upload.
+            Custom .bin import-for-upload: bounded validation, embedded thumbnail, size/SHA-256 and exact original-byte transfer.
             Depth Lab, transparency masks and both brush editors have been removed by request.
-            Generated faces use two live digit tables. Analogue support awaits a supplied reference file.
+            The normal digital editor remains. Analogue/unknown formats are not yet supported by import.
             CI validates software behavior, not all physical watch configurations.
           files: release-files/*
   prune-prereleases:

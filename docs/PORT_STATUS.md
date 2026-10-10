@@ -1,4 +1,8 @@
-# Native port status · 0.5.0
+# Native port status · 0.5.1
+
+## Binary import-for-upload
+
+Version0.5.1 adds a document-picker .bin importer under Watch. It bounds stream reads to2MiB, validates the supported API0x23 digital structure, displays the embedded thumbnail/size/SHA-256 and retains original bytes for an explicit confirmed upload. It does not reconstruct the binary, change the editor project, restore depth controls, or accept unknown analogue formats. Files stay in process memory; selection survives rotation but not process termination. See [IMPORTING.md](IMPORTING.md).
 
 ## Available
 

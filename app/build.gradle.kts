@@ -12,8 +12,8 @@ android {
         applicationId = "dev.citali.bolttstudio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.5.0"
+        versionCode = 8
+        versionName = "0.5.1"
         val sha = providers.environmentVariable("GITHUB_SHA").orNull
             ?.takeIf { it.matches(Regex("[0-9a-fA-F]{40}")) }?.take(12) ?: "local"
         buildConfigField("String", "BUILD_COMMIT", "\"$sha\"")
