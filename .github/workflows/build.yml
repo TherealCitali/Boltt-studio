@@ -21,6 +21,7 @@ jobs:
         run: |
           python -m pip install Pillow==12.1.1
           python roundtrip_test.py
+          python depth_probe_test.py
       - name: Test codec, transfer protocol and build
         run: |
           chmod +x gradlew
@@ -85,8 +86,9 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Native Kotlin/Compose editor with drag/snap, font import, RGB controls and experimental BLE upload.
-            Test the original captured Da Fit face first, with Da Fit stopped and the watch charged.
+            Native Kotlin/Compose editor and BLE upload, plus the experimental Depth lab layering probe.
+            Photo depth is NOT established: test occlusion through minute changes and screen sleep/wake.
+            See docs/DEPTH_TEST.md. No AI segmentation, mask editor or frozen-clock fallback is included.
             CI checks codec/protocol logic; it does not establish physical watch compatibility or safe recovery.
             Preserved HTML/Python prototypes and protocol notes remain in the repository.
           files: release-files/*

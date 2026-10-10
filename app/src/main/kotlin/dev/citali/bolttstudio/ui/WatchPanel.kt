@@ -7,6 +7,8 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,13 +19,15 @@ import dev.citali.bolttstudio.bluetooth.WatchViewModel
 import dev.citali.bolttstudio.codec.MoyFace
 import kotlinx.coroutines.*
 
+private data class PendingUpload(val label: String, val bytes: ByteArray, val depthProbe: Boolean = false)
+
 @Composable
 fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
     val ui by watch.ui.collectAsState()
     val context = LocalContext.current; val scope = rememberCoroutineScope()
     var showAll by remember { mutableStateOf(false) }
     var preparing by remember { mutableStateOf(false) }
-    var pending by remember { mutableStateOf<Pair<String, ByteArray>?>(null) }
+    var pending by remember { mutableStateOf<PendingUpload?>(null) }
     var acknowledged by remember { mutableStateOf(false) }
     var showLogs by remember { mutableStateOf(false) }
     val enable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -59,7 +63,7 @@ fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
                     else MoyFace.build(snapshot)
                 }
                 acknowledged = false
-                pending = (if (captured) "Captured Da Fit face (original bytes)" else "Current editor face") to bytes
+                pending = PendingUpload(if (captured) "Captured Da Fit face (original bytes)" else "Current editor face", bytes)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { watch.report("Cannot prepare face: ${error.message}") }
             finally { preparing = false }
@@ -116,10 +120,16 @@ fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
             }
         }
     }
-    pending?.let { (label, bytes) ->
+    DepthProbePanel(ready = ui.ready && !preparing, transferring = ui.transferring || ui.connecting, onUpload = { result ->
+        acknowledged = false
+        pending = PendingUpload(if (result.face.foreground != null) "EXPERIMENTAL depth layering probe" else "Depth probe — no-overlay control",
+            result.bytes.clone(), depthProbe = true)
+    })
+    pending?.let { (label, bytes, depthProbe) ->
         AlertDialog(onDismissRequest = { pending = null }, title = { Text("Send watchface?") },
-            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("$label · ${bytes.size} bytes\nTarget: ${ui.selected}")
+                if (depthProbe) Text("Multiple-image support, alpha blending and redraw order are UNKNOWN. This is a diagnostic test, not a finished photo-depth feature. Inspect across minute changes and sleep/wake; an app preview or upload-complete message cannot establish support.")
                 Text("This reverse-engineered protocol can leave a partial or unusable face if interrupted or incompatible. The completion-check algorithm and finalization fields are not fully understood. There is no guaranteed rollback.")
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(acknowledged, { acknowledged = it })

@@ -13,6 +13,8 @@ data class FaceImage(val width: Int, val height: Int, val pixels: IntArray) {
     }
 }
 data class Point(val x: Int, val y: Int)
+/** Experimental static image drawn after TimeNum; firmware draw/redraw ordering is unverified. */
+data class ImageLayer(val image: FaceImage, val position: Point)
 
 object MoyFace {
     const val WIDTH = 240
@@ -85,7 +87,7 @@ object MoyFace {
     }
 
     data class Face(val background: FaceImage, val digits: List<List<FaceImage>>, val positions: List<Point>,
-        val sets: List<Int>, val preview: FaceImage, val dash: FaceImage)
+        val sets: List<Int>, val preview: FaceImage, val dash: FaceImage, val foreground: ImageLayer? = null)
 
     fun parse(bytes: ByteArray): Face {
         require(bytes.size in 18..MAX_FILE_BYTES && bytes.u16(0) == 0x23) { "Not a supported API 0x23 face" }
@@ -96,9 +98,10 @@ object MoyFace {
         val n = (elementOffset - digitOffset - 2) / 83; require(n in 1..4)
         val digits = (0 until n).map { set -> (0..9).map { image(digitOffset + 3 + set * 83 + it * 8) } }
         var o = elementOffset; var background: FaceImage? = null; var dash: FaceImage? = null
+        var foreground: ImageLayer? = null
         var positions: List<Point>? = null; var sets: List<Int>? = null; var count = 0
         while (bytes.u8(o) == 1) {
-            require(++count <= 3) { "Duplicate or unsupported elements" }
+            require(++count <= 4) { "Duplicate or unsupported elements" }
             when (bytes.u8(o + 1)) {
                 0x23 -> {
                     require(dash == null)
@@ -114,7 +117,18 @@ object MoyFace {
                     }
                     o += 10
                 }
-                0 -> { require(background == null && bytes.u16(o + 2) == 0 && bytes.u16(o + 4) == 0); background = image(o + 6); o += 14 }
+                0 -> {
+                    val position = Point(bytes.u16(o + 2), bytes.u16(o + 4))
+                    val bitmap = image(o + 6)
+                    if (background == null) {
+                        require(position == Point(0, 0) && positions == null) { "Background must precede live time" }
+                        background = bitmap
+                    } else {
+                        require(foreground == null && positions != null) { "Only one foreground after live time is supported" }
+                        foreground = ImageLayer(bitmap, position)
+                    }
+                    o += 14
+                }
                 2 -> {
                     require(positions == null)
                     sets = (0..3).map { bytes.u8(o + 2 + it).also { s -> require(s < n) } }
@@ -124,7 +138,8 @@ object MoyFace {
                 else -> error("Unsupported face element")
             }
         }
-        val result = Face(requireNotNull(background), digits, requireNotNull(positions), requireNotNull(sets), preview, requireNotNull(dash))
+        require(bytes.u8(o) == 0 && bytes.u8(o + 1) == 0) { "Invalid element terminator" }
+        val result = Face(requireNotNull(background), digits, requireNotNull(positions), requireNotNull(sets), preview, requireNotNull(dash), foreground)
         validate(result); return result
     }
     private fun validate(face: Face) {
@@ -132,6 +147,11 @@ object MoyFace {
         require(face.preview.width == 140 && face.preview.height == 163)
         require(face.digits.size in 1..4 && face.digits.all { it.size == 10 })
         require(face.positions.size == 4 && face.sets.size == 4)
+        face.foreground?.let { layer ->
+            require(layer.position.x >= 0 && layer.position.y >= 0 &&
+                layer.position.x.toLong() + layer.image.width <= WIDTH &&
+                layer.position.y.toLong() + layer.image.height <= HEIGHT) { "Foreground exceeds screen bounds" }
+        }
         face.positions.forEachIndexed { i, p ->
             require(face.sets[i] in face.digits.indices)
             face.digits[face.sets[i]].forEach { glyph ->
@@ -141,11 +161,12 @@ object MoyFace {
     }
     fun build(face: Face): ByteArray {
         validate(face)
-        val n = face.digits.size; val headerSize = 16 + 2 + 83 * n + 10 + 14 + 34 + 2
+        val n = face.digits.size; val headerSize = 16 + 2 + 83 * n + 10 + 14 + 34 + (if (face.foreground != null) 14 else 0) + 2
         var offset = (headerSize + 3) and -4; val blobs = ByteArrayOutputStream()
         fun add(image: FaceImage): Int { val start = offset; val encoded = encodeImage(image); blobs.write(encoded); offset += encoded.size; require(offset <= MAX_FILE_BYTES); return start }
         val dashOffset = add(face.dash); val bgOffset = add(face.background)
         val digitOffsets = face.digits.map { set -> set.map { add(it) } }; val previewOffset = add(face.preview)
+        val foregroundOffset = face.foreground?.let { add(it.image) }
         val out = ByteArrayOutputStream()
         fun image(off: Int, img: FaceImage) { out.u32(off); out.u16(img.width); out.u16(img.height) }
         out.u16(0x23); out.u16(0xffff); image(previewOffset, face.preview); out.u16(16); out.u16(18 + 83 * n)
@@ -154,7 +175,14 @@ object MoyFace {
         out.write(1); out.write(0x23); image(dashOffset, face.dash)
         out.write(1); out.write(0); out.u16(0); out.u16(0); image(bgOffset, face.background)
         out.write(1); out.write(2); face.sets.forEach { out.write(it) }
-        face.positions.forEach { out.u16(it.x); out.u16(it.y) }; repeat(14) { out.write(0) }
+        face.positions.forEach { out.u16(it.x); out.u16(it.y) }; repeat(12) { out.write(0) }
+        // TimeNum is exactly 34 bytes. The list terminator belongs AFTER the new image,
+        // not in TimeNum's reserved bytes; legacy output stays byte-for-byte identical.
+        face.foreground?.let { layer ->
+            out.write(1); out.write(0); out.u16(layer.position.x); out.u16(layer.position.y)
+            image(requireNotNull(foregroundOffset), layer.image)
+        }
+        out.u16(0)
         while (out.size() % 4 != 0) out.write(0)
         require(out.size() == ((headerSize + 3) and -4)); out.write(blobs.toByteArray()); return out.toByteArray()
     }

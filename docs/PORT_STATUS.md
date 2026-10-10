@@ -1,4 +1,8 @@
-# Native port status · 0.2.0
+# Native port status · 0.2.1
+
+## Depth experiment and hardware report
+
+The user confirmed both captured and generated0.2.0 face uploads work on their setup; see [HARDWARE_RESULTS.md](HARDWARE_RESULTS.md). Multiple-image layering is still **unverified**. Version0.2.1 adds a separate depth probe and no-overlay control, cropped-alpha image encoding after live TimeNum, simulated preview, actual file size and export. Existing editor uploads remain foreground-free. Segmentation/mask tools and production photo-depth export are not enabled. See [DEPTH_TEST.md](DEPTH_TEST.md).
 
 ## Implemented
 

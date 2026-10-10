@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.2 beta / experimental native BLE.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.2.1 beta / depth-layering experiment.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -30,6 +30,12 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
 
 Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editing state survives rotation, not process death. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
+
+## Depth lab — test before photo cutouts
+
+The ordinary captured/custom upload path is [user-reported working](docs/HARDWARE_RESULTS.md). **Photo depth remains unverified.** This build adds a separate solid-background / live-digits / transparent-stripe probe, optional no-overlay control, simulated preview, measured file size and `.bin` export. Follow [DEPTH_TEST.md](docs/DEPTH_TEST.md) across minute changes and screen sleep/wake.
+
+This is a firmware capability gate, **not the finished photo-depth workflow**. AI person segmentation, manual masks, digit size/spacing and production depth export are deferred until the layering experiment passes. No frozen-clock fallback or new network permission is introduced.
 
 ## Preserved reference implementation
 
@@ -52,6 +58,7 @@ The original web prototype requires HTTPS (or localhost) and a browser supportin
 # Reference codec checks
 python -m pip install Pillow
 python roundtrip_test.py
+python depth_probe_test.py
 ```
 
 Pushes to `main`/`dev` run tests, lint, build, sign and publish a commit prerelease. Pull requests run validation without signing or publication. Successful publication retains the latest **five prereleases**; drafts and stable releases are excluded from cleanup.
