@@ -75,7 +75,7 @@ fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryS
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Text("Automatic previews", Modifier.weight(1f))
-                    Switch(library.autoPreviews, { library.setAutoPreviews(it) })
+                    Switch(library.autoPreviews, { library.updateAutoPreviews(it) })
                 }
                 FilterChip(library.downloadedOnly, { library.downloadedOnly = !library.downloadedOnly }, label = { Text("Downloaded · ${library.saved.size}") })
                 if (library.saved.isNotEmpty()) TextButton(enabled = !library.busy, onClick = { confirmClear = true }) { Text("Clear downloads · keeps active draft font") }

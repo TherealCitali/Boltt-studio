@@ -15,7 +15,7 @@ class FontLibraryState(application: Application) : AndroidViewModel(application)
     private val storeLock = Mutex()
     private val options = application.getSharedPreferences("font-library", 0)
     var autoPreviews by mutableStateOf(options.getBoolean("auto-previews", true)); private set
-    fun setAutoPreviews(value: Boolean) { autoPreviews = value; options.edit().putBoolean("auto-previews", value).apply() }
+    fun updateAutoPreviews(value: Boolean) { autoPreviews = value; options.edit().putBoolean("auto-previews", value).apply() }
     private fun cachePreview(entry: CatalogFont, face: Typeface) {
         cardFonts[entry.blob] = face
         recent.remove(entry.blob); recent.add(entry.blob)
@@ -26,7 +26,7 @@ class FontLibraryState(application: Application) : AndroidViewModel(application)
     private val recent = LinkedHashSet<String>()
     suspend fun previewVisible(entries: List<CatalogFont>) {
         val index = catalog ?: return
-        for (entry in entries.take(8)) {
+        for (entry in entries) {
             currentCoroutineContext().ensureActive()
             if (busy || entry.blob in cardFonts || entry.blob in cardErrors) continue
             try {
@@ -117,7 +117,7 @@ class FontLibraryState(application: Application) : AndroidViewModel(application)
     }
     fun clearDownloads() {
         if (busy) return
-        setAutoPreviews(false)
+        updateAutoPreviews(false)
         busy = true
         task = viewModelScope.launch {
             try {
