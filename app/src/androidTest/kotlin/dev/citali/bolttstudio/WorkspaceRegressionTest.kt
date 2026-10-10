@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import android.graphics.Bitmap
 import java.io.File
 import androidx.lifecycle.ViewModelProvider
-import androidx.test.platform.app.InstrumentationRegistry
 import dev.citali.bolttstudio.fonts.FontCatalog
 import dev.citali.bolttstudio.fonts.FontLibraryState
 import androidx.compose.ui.test.*
@@ -63,15 +62,13 @@ class WorkspaceRegressionTest {
         rule.onNodeWithText("Apply Hours hex").assertExists()
         rule.waitUntil(10000) { !imeVisible() }
     }
-    @Test fun visibleFontCardAutomaticallyRendersVerifiedTypefaceWithoutChangingDraft() {
+    @Test fun uncachedFontCardUsesBundledSampleWithoutDownloadingOrChangingDraft() {
         ready()
         val context = rule.activity
         val catalog = context.assets.open("google-fonts/catalog.tsv").bufferedReader().use { FontCatalog.parse(it.readText()) }
         val entry = catalog.fonts.single { it.family == "Roboto Mono" }
-        val directory = File(context.filesDir, "google-fonts/${entry.blob}").apply { mkdirs() }
-        val fixture = InstrumentationRegistry.getInstrumentation().context.assets
-        fixture.open("font-preview-fixture/font.ttf").use { input -> File(directory, "font.ttf").outputStream().use { input.copyTo(it) } }
-        fixture.open("font-preview-fixture/OFL.txt").use { input -> File(directory, "license.txt").outputStream().use { input.copyTo(it) } }
+        // Cold library: no font binary or license available locally.
+        File(context.filesDir, "google-fonts").deleteRecursively()
         var editor: EditorState? = null
         rule.runOnIdle { editor = ViewModelProvider(rule.activity)[EditorState::class.java] }
         val originalTypeface = editor!!.customTypeface
@@ -85,7 +82,8 @@ class WorkspaceRegressionTest {
         rule.onNodeWithTag("font-sample-Roboto Mono").performScrollTo().assertIsDisplayed()
         rule.runOnIdle {
             val library = ViewModelProvider(rule.activity)[FontLibraryState::class.java]
-            assertNotNull(library.cardFonts[entry.blob])
+            assertFalse(entry.blob in library.saved)
+            assertFalse(File(context.filesDir, "google-fonts/${entry.blob}/font.ttf").exists())
             assertNull(library.selected)
             assertSame(originalTypeface, editor!!.customTypeface)
             assertEquals(originalLabel, editor!!.fontLabel)

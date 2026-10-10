@@ -1,8 +1,8 @@
-# Native port status · 0.7.2
+# Native port status · 0.7.3
 
-## Automatic font previews
+## Instant offline font previews
 
-0.7.2 renders actual digit samples directly in visible Google Fonts cards. Automatic requests are viewport-driven, lifecycle-aware, sequential, cancellable and storage-bounded. Browsing never applies a font to the draft.
+0.7.3 replaces the automatic full-font preview downloader with 1,723 bundled tiny raster samples from the pinned fonts. No network is used for browsing, even with an empty font cache. Full fonts/licenses download only after Get/Choose; native review, offline downloaded-font reuse and draft persistence remain. See [GOOGLE_FONTS.md](GOOGLE_FONTS.md).
 
 ## Editor interaction fixes
 

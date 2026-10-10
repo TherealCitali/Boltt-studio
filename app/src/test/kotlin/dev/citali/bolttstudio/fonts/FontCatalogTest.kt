@@ -68,4 +68,24 @@ class FontCatalogTest {
             FontBytes.readBounded(ByteArrayInputStream(ByteArray(100)), 100) { throw java.util.concurrent.CancellationException() }
         }.exceptionOrNull() is java.util.concurrent.CancellationException)
     }
+    @Test fun everyFamilyHasAnOfflinePreviewOrDocumentedDigitException() {
+        val catalog = FontCatalog.parse(source())
+        val loader = javaClass.classLoader!!
+        val exceptions = loader.getResourceAsStream("preview-exceptions.json")!!.bufferedReader().use { it.readText() }
+        var totalBytes = 0
+        for (font in catalog.fonts) {
+            val stream = loader.getResourceAsStream("previews/${font.blob}.png")
+            if (stream == null) {
+                assertTrue("Missing preview: ${font.family}", exceptions.contains("\"${font.family}\""))
+            } else {
+                val bytes = stream.use { it.readBytes() }; totalBytes += bytes.size
+                assertArrayEquals(byteArrayOf(-119,80,78,71,13,10,26,10), bytes.take(8).toByteArray())
+                fun number(o: Int) = (0..3).fold(0) { v, i -> (v shl 8) or (bytes[o+i].toInt() and 255) }
+                assertEquals(720, number(16)); assertEquals(96, number(20))
+                assertNotNull("Preview license: ${font.family}", loader.getResource("preview-licenses/${font.licenseBlob}.txt"))
+            }
+        }
+        assertTrue(totalBytes < 16 * 1024 * 1024)
+    }
+
 }

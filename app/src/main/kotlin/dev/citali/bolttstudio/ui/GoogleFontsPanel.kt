@@ -1,11 +1,5 @@
 package dev.citali.bolttstudio.ui
 
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.text.KeyboardActions
@@ -25,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -43,23 +38,6 @@ fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryS
     val fonts = remember(library.catalog, library.query, library.category, library.downloadedOnly, library.saved) {
         library.catalog?.search(library.query, library.category)?.filter { !library.downloadedOnly || it.blob in library.saved } ?: emptyList()
     }
-    val owner = LocalLifecycleOwner.current
-    var foreground by remember(owner) { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) }
-    DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, _ -> foreground = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
-    }
-    // Viewport keys, not composed/prefetched items: no downloading the entire catalog.
-    LaunchedEffect(listState, library.catalog, library.query, library.category, library.downloadedOnly, foreground, library.autoPreviews, library.busy) {
-        if (!foreground || library.busy) return@LaunchedEffect
-        val byName = library.catalog?.fonts?.associateBy { it.family } ?: return@LaunchedEffect
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.mapNotNull { byName[it.key as? String]?.family } }
-            .distinctUntilChanged().collectLatest { names ->
-                delay(250)
-                library.previewVisible(names.mapNotNull { byName[it] }.filter { library.autoPreviews || it.blob in library.saved })
-            }
-    }
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(library.query, { library.query = it.take(100) }, singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focus.clearFocus(); keyboard?.hide() }),
@@ -68,15 +46,11 @@ fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryS
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 Text("${library.catalog?.fonts?.size ?: 0} families · offline catalog", style = MaterialTheme.typography.titleMedium)
-                Text("Visible cards automatically download their real fonts and licenses, including on mobile data. Saved previews work offline. Use font is still required to change your draft.", style = MaterialTheme.typography.bodySmall)
+                Text("Real-font samples are included in the app—no preview downloads. Get downloads the full font and license; Use font applies it to your draft.", style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("All", "Sans Serif", "Serif", "Display", "Handwriting", "Monospace").forEach { category ->
                         FilterChip(library.category == category, { library.category = category }, label = { Text(category) })
                     }
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Text("Automatic previews", Modifier.weight(1f))
-                    Switch(library.autoPreviews, { library.updateAutoPreviews(it) })
                 }
                 FilterChip(library.downloadedOnly, { library.downloadedOnly = !library.downloadedOnly }, label = { Text("Downloaded · ${library.saved.size}") })
                 if (library.saved.isNotEmpty()) TextButton(enabled = !library.busy, onClick = { confirmClear = true }) { Text("Clear downloads · keeps active draft font") }
@@ -119,25 +93,21 @@ fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryS
                             Text(font.family, style = MaterialTheme.typography.titleMedium)
                             Text("${font.category} · ${(font.bytes + 1023) / 1024} KB${if (downloaded) " · saved" else ""}", style = MaterialTheme.typography.bodySmall)
                         }
-                        OutlinedButton(enabled = !library.busy, onClick = { licenseOpen = false; library.retryPreview(font) }) {
-                            Text(if (font.blob in library.cardErrors) "Retry" else if (downloaded) "Choose" else "Get")
+                        OutlinedButton(enabled = !library.busy, onClick = { licenseOpen = false; library.select(font) }) {
+                            Text(if (downloaded) "Choose" else "Get")
                         }
                     }
-                    val face = library.cardFonts[font.blob]
-                    // Reserve the same space before and after loading; no viewport/card-height jumps.
+                    val thumbnail by produceState<Pair<Boolean, android.graphics.Bitmap?>>(initialValue = false to null, key1 = font.blob) {
+                        value = true to library.cardPreview(font)
+                    }
                     Box(Modifier.fillMaxWidth().height((72f * LocalDensity.current.fontScale).dp),
                         contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
-                    if (face != null) {
-                        val color = MaterialTheme.colorScheme.onSurface.toArgb()
-                        AndroidView(factory = { TextView(it).apply {
-                            setSingleLine(false)
-                            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                            setAutoSizeTextTypeUniformWithConfiguration(12, 26, 1, TypedValue.COMPLEX_UNIT_SP)
-                        } }, update = {
-                            it.typeface = face; it.text = "10:54 · 0123456789"; it.setTextColor(color)
-                            it.contentDescription = "Actual font sample: ${font.family}"
-                        }, modifier = Modifier.fillMaxSize().testTag("font-sample-${font.family}"))
-                    } else Text(library.cardErrors[font.blob] ?: if (library.autoPreviews || downloaded) "Loading actual font preview…" else "Automatic previews paused · tap Get", style = MaterialTheme.typography.bodySmall)
+                        thumbnail.second?.let { bitmap ->
+                            androidx.compose.foundation.Image(bitmap.asImageBitmap(), "Actual font sample: ${font.family}",
+                                modifier = Modifier.fillMaxSize().testTag("font-sample-${font.family}"),
+                                alignment = androidx.compose.ui.Alignment.CenterStart,
+                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onSurface))
+                        } ?: Text(if (thumbnail.first) "No complete digit sample · use Get to inspect this font" else "Loading bundled sample…", style = MaterialTheme.typography.bodySmall)
                     }
                     }
                 }

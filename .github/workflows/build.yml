@@ -117,10 +117,10 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Actual Google Fonts digit samples load automatically in visible cards as you scroll.
-            Verified font/license files are cached for offline reuse; browsing never changes your draft.
-            Automatic previews can be paused and are bounded by viewport, lifecycle and storage limits.
-            Clock layout, colour wheel, keyboard recovery, manual TTF/OTF and BLE retained.
+            Instant offline Google Fonts previews: all 1,723 samples bundled, no preview network downloads.
+            Full fonts and licenses download only after Get/Choose. Existing downloaded fonts and draft remain intact.
+            Cold-library emulator regression verifies a visible sample without downloading/applying a font.
+            Keyboard/layout/wheel regressions and normal digital/BLE behavior retained.
           files: release-files/*
   prune-prereleases:
     needs: prerelease
