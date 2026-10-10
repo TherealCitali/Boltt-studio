@@ -82,7 +82,7 @@ class WorkspaceRegressionTest {
         rule.onNodeWithText("Search Google Fonts").performImeAction()
         rule.onNodeWithTag("font-library-list").performScrollToNode(hasText("Roboto Mono"))
         rule.waitUntil(15000) { rule.onAllNodesWithTag("font-sample-Roboto Mono").fetchSemanticsNodes().isNotEmpty() }
-        rule.onNodeWithTag("font-sample-Roboto Mono").assertIsDisplayed()
+        rule.onNodeWithTag("font-sample-Roboto Mono").performScrollTo().assertIsDisplayed()
         rule.runOnIdle {
             val library = ViewModelProvider(rule.activity)[FontLibraryState::class.java]
             assertNotNull(library.cardFonts[entry.blob])

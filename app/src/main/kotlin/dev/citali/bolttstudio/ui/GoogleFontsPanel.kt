@@ -6,6 +6,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -123,16 +124,21 @@ fun GoogleFontsPanel(editor: EditorState, canUse: Boolean, library: FontLibraryS
                         }
                     }
                     val face = library.cardFonts[font.blob]
+                    // Reserve the same space before and after loading; no viewport/card-height jumps.
+                    Box(Modifier.fillMaxWidth().height((72f * LocalDensity.current.fontScale).dp),
+                        contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
                     if (face != null) {
                         val color = MaterialTheme.colorScheme.onSurface.toArgb()
                         AndroidView(factory = { TextView(it).apply {
-                            setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
                             setSingleLine(false)
+                            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                            setAutoSizeTextTypeUniformWithConfiguration(12, 26, 1, TypedValue.COMPLEX_UNIT_SP)
                         } }, update = {
                             it.typeface = face; it.text = "10:54 · 0123456789"; it.setTextColor(color)
                             it.contentDescription = "Actual font sample: ${font.family}"
-                        }, modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp).testTag("font-sample-${font.family}"))
+                        }, modifier = Modifier.fillMaxSize().testTag("font-sample-${font.family}"))
                     } else Text(library.cardErrors[font.blob] ?: if (library.autoPreviews || downloaded) "Loading actual font preview…" else "Automatic previews paused · tap Get", style = MaterialTheme.typography.bodySmall)
+                    }
                     }
                 }
             }
