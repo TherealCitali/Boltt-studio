@@ -42,36 +42,3 @@ data class ClockDesign(val hours: ClockGroup = ClockGroup(74, 41), val minutes: 
     val overlaps get() = hours.x < minutes.x + minutes.span && minutes.x < hours.x + hours.span &&
         hours.y < minutes.y + minutes.height && minutes.y < hours.y + hours.height
 }
-
-/** Screen-space retained-alpha mask: 255 shows the clock, 0 reveals the background. */
-object ClockMask {
-    fun empty() = ByteArray(240 * 296) { -1 }
-    fun stroke(mask: ByteArray, fromX: Float, fromY: Float, toX: Float, toY: Float, radius: Float, restore: Boolean, feather: Boolean): ByteArray {
-        require(mask.size == 240 * 296 && radius in 1f..60f)
-        val result = mask.clone()
-        val dx = toX - fromX; val dy = toY - fromY; val length = dx * dx + dy * dy
-        val left = floor(min(fromX, toX) - radius).toInt().coerceAtLeast(0)
-        val right = ceil(max(fromX, toX) + radius).toInt().coerceAtMost(239)
-        val top = floor(min(fromY, toY) - radius).toInt().coerceAtLeast(0)
-        val bottom = ceil(max(fromY, toY) + radius).toInt().coerceAtMost(295)
-        for (y in top..bottom) for (x in left..right) {
-            val t = if (length == 0f) 0f else (((x - fromX) * dx + (y - fromY) * dy) / length).coerceIn(0f, 1f)
-            val distance = hypot(x - fromX - t * dx, y - fromY - t * dy)
-            if (distance > radius) continue
-            val amount = if (feather) ((radius - distance) / max(1f, radius * .35f)).coerceIn(0f, 1f) else 1f
-            val desired = (255 * (if (restore) amount else 1f - amount)).roundToInt()
-            val old = result[y * 240 + x].toInt() and 255
-            result[y * 240 + x] = (if (restore) max(old, desired) else min(old, desired)).toByte()
-        }
-        return result
-    }
-    fun apply(glyph: FaceImage, position: Point, mask: ByteArray): FaceImage {
-        require(mask.size == 240 * 296 && position.x >= 0 && position.y >= 0 && position.x + glyph.width <= 240 && position.y + glyph.height <= 296)
-        return FaceImage(glyph.width, glyph.height, IntArray(glyph.pixels.size) { i ->
-            val pixel = glyph.pixels[i]
-            val keep = mask[(position.y + i / glyph.width) * 240 + position.x + i % glyph.width].toInt() and 255
-            val alpha = ((pixel ushr 24) * keep + 127) / 255
-            if (alpha == 0) 0 else (alpha shl 24) or (pixel and 0xffffff)
-        })
-    }
-}

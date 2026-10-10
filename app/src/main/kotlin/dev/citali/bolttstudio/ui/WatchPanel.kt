@@ -15,16 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.citali.bolttstudio.BuildConfig
-import dev.citali.bolttstudio.EditorState
 import dev.citali.bolttstudio.bluetooth.WatchViewModel
 import dev.citali.bolttstudio.codec.MoyFace
 import kotlinx.coroutines.*
 
-private data class PendingUpload(val label: String, val bytes: ByteArray, val depthProbe: Boolean = false, val modifiedClock: Boolean = false)
+private data class PendingUpload(val label: String, val bytes: ByteArray, val modifiedClock: Boolean = false)
 
 @Composable
-fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face, editor: EditorState, editorFrame: FaceRenderer.Frame,
-    onChooseImage: () -> Unit, onEditStyle: () -> Unit, depthAnchor: Modifier) {
+fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
     val ui by watch.ui.collectAsState()
     val context = LocalContext.current; val scope = rememberCoroutineScope()
     var showAll by remember { mutableStateOf(false) }
@@ -66,7 +64,7 @@ fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face, editor: EditorState, e
                 }
                 acknowledged = false
                 pending = PendingUpload(if (captured) "Captured Da Fit face (original bytes)" else "Current editor face", bytes,
-                    modifiedClock = !captured && (snapshot.digits.size == 4 || snapshot.digits.flatten().any { it.width != 42 || it.height != 66 }))
+                    modifiedClock = !captured && snapshot.digits.flatten().any { it.width != 42 || it.height != 66 })
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { watch.report("Cannot prepare face: ${error.message}") }
             finally { preparing = false }
@@ -123,21 +121,11 @@ fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face, editor: EditorState, e
             }
         }
     }
-    Spacer(Modifier.height(1.dp).then(depthAnchor))
-    DepthProbePanel(ready = ui.ready && !preparing, transferring = ui.transferring || ui.connecting,
-        editor = editor, frame = editorFrame, onChooseImage = onChooseImage, onEditStyle = onEditStyle,
-        onUpload = { result, usesEditor ->
-            acknowledged = false
-            pending = PendingUpload(if (usesEditor) "Current photo & clock · depth test" else "Original solid-background diagnostic",
-                result.bytes.clone(), depthProbe = result.face.foreground != null,
-                modifiedClock = result.face.digits.size == 4 || result.face.digits.flatten().any { it.width != 42 || it.height != 66 })
-        })
-    pending?.let { (label, bytes, depthProbe, modifiedClock) ->
+    pending?.let { (label, bytes, modifiedClock) ->
         AlertDialog(onDismissRequest = { pending = null }, title = { Text("Send watchface?") },
             text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("$label · ${bytes.size} bytes\nTarget: ${ui.selected}")
-                if (modifiedClock) Text("This face uses resized glyphs and/or four per-position alpha-masked digit tables. The live-time field remains intact, but these new configurations need device testing. Inspect changing digits and screen wake; use an unmasked default-size face as a control.")
-                if (depthProbe) Text("Multiple-image support, alpha blending and redraw order are UNKNOWN. This is a diagnostic test, not a finished photo-depth feature. Inspect across minute changes and sleep/wake; an app preview or upload-complete message cannot establish support.")
+                if (modifiedClock) Text("This face uses resized glyphs. The live-time field remains intact, but these new configurations need device testing. Inspect changing digits and screen wake; use a default-size face as a control.")
                 Text("This reverse-engineered protocol can leave a partial or unusable face if interrupted or incompatible. The completion-check algorithm and finalization fields are not fully understood. There is no guaranteed rollback.")
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(acknowledged, { acknowledged = it })

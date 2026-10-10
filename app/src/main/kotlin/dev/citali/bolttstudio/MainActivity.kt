@@ -40,11 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.citali.bolttstudio.codec.MoyFace
 import dev.citali.bolttstudio.ui.FaceRenderer
 import dev.citali.bolttstudio.ui.ClockControls
-import dev.citali.bolttstudio.ui.ClockBrushPanel
-import dev.citali.bolttstudio.ui.BrushSession
-import dev.citali.bolttstudio.ui.BrushWorkspace
 import dev.citali.bolttstudio.codec.ClockDesign
-import dev.citali.bolttstudio.codec.ClockMask
 import kotlinx.coroutines.*
 
 class MainActivity : ComponentActivity() {
@@ -70,18 +66,8 @@ class EditorState : ViewModel() {
     var design by mutableStateOf(ClockDesign())
     var independent by mutableStateOf(false)
     var editHours by mutableStateOf(true)
-    var brushSession by mutableStateOf<BrushSession?>(null)
-    var maskEnabled by mutableStateOf(false)
-    var mask by mutableStateOf(ClockMask.empty())
     var previewMinute by mutableIntStateOf(609)
     val previewDigits get() = listOf(previewMinute / 60 / 10, previewMinute / 60 % 10, previewMinute % 60 / 10, previewMinute % 10)
-    val undoMasks = ArrayDeque<ByteArray>()
-    var undoCount by mutableIntStateOf(0)
-    fun checkpointMask() {
-        if (undoMasks.size == 20) undoMasks.removeFirst()
-        undoMasks.addLast(mask.clone()); undoCount = undoMasks.size
-    }
-    fun undoMask() { if (undoMasks.isNotEmpty()) mask = undoMasks.removeLast(); undoCount = undoMasks.size }
     var stacked by mutableStateOf(true); var outline by mutableStateOf(true)
     var family by mutableStateOf("sans-serif")
     var customTypeface by mutableStateOf<Typeface?>(null)
@@ -99,10 +85,7 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
     val context = LocalContext.current; val scope = rememberCoroutineScope()
     val photoAnchor = remember { BringIntoViewRequester() }
     val clockAnchor = remember { BringIntoViewRequester() }
-    val styleAnchor = remember { BringIntoViewRequester() }
-    val brushAnchor = remember { BringIntoViewRequester() }
     val watchAnchor = remember { BringIntoViewRequester() }
-    val depthAnchor = remember { BringIntoViewRequester() }
     val scrollState = rememberScrollState()
     val sectionPositions = remember { mutableMapOf<BringIntoViewRequester, Float>() }
     val viewportTop = remember { floatArrayOf(0f) }
@@ -122,15 +105,14 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
         view.keepScreenOn = watchUi.transferring
         onDispose { view.keepScreenOn = previous }
     }
-    var message by remember { mutableStateOf("Editor ready. Preview time can be changed in Depth lab.") }
+    var message by remember { mutableStateOf("Editor ready. Preview time can be changed in Clock controls.") }
     var busy by remember { mutableStateOf(false) }
     val frame = remember(state.background, state.design, state.family, state.hours, state.minutes,
         state.outline, state.zoom, state.panX, state.panY, state.customTypeface, state.useCustomFont,
-        state.mask, state.maskEnabled, state.previewMinute) {
+        state.previewMinute) {
         FaceRenderer.render(state.background, 0, 0, state.stacked, state.family,
             state.hours, state.minutes, state.outline, state.zoom, state.panX, state.panY,
-            if (state.useCustomFont) state.customTypeface else null, state.design,
-            if (state.maskEnabled) state.mask else null, state.previewDigits)
+            if (state.useCustomFont) state.customTypeface else null, state.design, state.previewDigits)
     }
     // Capture export bytes before launching SAF so edits cannot silently change the pending export.
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
@@ -222,8 +204,7 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
         Column {
             TopAppBar(title = { Text("Boltt Studio · ${BuildConfig.VERSION_NAME}") })
             Row(Modifier.fillMaxWidth()) {
-                listOf("Photo" to photoAnchor, "Clock" to clockAnchor, "Brush" to brushAnchor,
-                    "Watch" to watchAnchor, "Depth" to depthAnchor).forEach { (label, anchor) ->
+                listOf("Photo" to photoAnchor, "Clock" to clockAnchor, "Watch" to watchAnchor).forEach { (label, anchor) ->
                     TextButton(onClick = { jump(anchor) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp)) {
                         Text(label, style = MaterialTheme.typography.labelMedium)
                     }
@@ -265,7 +246,8 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Clock controls · size, position & style", style = MaterialTheme.typography.titleLarge)
                 ClockControls(state)
-                Spacer(Modifier.height(1.dp).then(section(styleAnchor)))
+                Text("Preview · %02d:%02d (watch time stays live)".format(state.previewMinute / 60, state.previewMinute % 60))
+                Slider(state.previewMinute.toFloat(), { state.previewMinute = it.roundToInt() }, valueRange = 0f..1439f)
                 Row { listOf("sans-serif" to "Sans", "serif" to "Serif", "monospace" to "Mono").forEach { (font, label) ->
                     FilterChip(selected = !state.useCustomFont && state.family == font, onClick = { state.family = font; state.useCustomFont = false }, label = { Text(label) }, modifier = Modifier.padding(end = 4.dp))
                 } }
@@ -295,32 +277,14 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             }) { Text("Export watchface .bin") }
             Text(message, style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
-            Spacer(Modifier.height(1.dp).then(section(brushAnchor)))
-            ClockBrushPanel(state, frame, canOpen = !watchUi.transferring && !busy, onOpenWorkspace = {
-                val clean = FaceRenderer.render(state.background, 0, 0, state.stacked, state.family,
-                    state.hours, state.minutes, state.outline, state.zoom, state.panX, state.panY,
-                    if (state.useCustomFont) state.customTypeface else null, state.design, null, state.previewDigits)
-                state.brushSession = BrushSession(state.mask, clean.face).also { it.minute = state.previewMinute }
-                clean.image.recycle()
-            })
             Spacer(Modifier.height(1.dp).then(section(watchAnchor)))
-            WatchPanel(watch, frame.face, state, frame,
-                onChooseImage = {
-                    if (!busy && !watchUi.transferring) runCatching { importImage.launch(arrayOf("image/*")) }
-                        .onFailure { message = "No document picker available" }
-                }, onEditStyle = { jump(styleAnchor) }, depthAnchor = section(depthAnchor))
+            WatchPanel(watch, frame.face)
             Text("Session edits survive rotation, not process termination. Full .bin import and saved projects are still pending. Uploads stop when the app leaves the foreground; keep it open until finished.", style = MaterialTheme.typography.bodySmall)
             Text("${BuildConfig.VERSION_NAME} · ${BuildConfig.BUILD_COMMIT}\n${BuildConfig.BUILD_DATE}\nIndependent GPL-3.0 project; not an official Fire-Boltt or Da Fit app.", style = MaterialTheme.typography.labelSmall)
         }
         }
     }
-    state.brushSession?.let { draft ->
-        BrushWorkspace(draft, draft.source, onDone = { mask ->
-            if (!state.mask.contentEquals(mask)) { state.checkpointMask(); state.mask = mask.clone() }
-            state.maskEnabled = true
-            state.brushSession = null
-        }, onCancel = { state.brushSession = null })
-    }
+
 }
 @Composable private fun Control(label: String, value: Float, range: ClosedFloatingPointRange<Float>, update: (Float) -> Unit) {
     Text(label); Slider(value = value.coerceIn(range), onValueChange = update, valueRange = range)

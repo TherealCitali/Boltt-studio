@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.4.0 beta / full-screen brush studio.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.5.0 beta / digital editor.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -31,19 +31,13 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editing state survives rotation, not process death. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
 
-## Full-screen brush studio
-
-Open **Brush → Open full-screen brush studio** for a large canvas, pinch zoom/two-finger pan, erase/restore, brush cursor, feathering, undo/redo, before comparison and mask tint. **Done** applies a draft; Cancel/Back protects the original mask. Read the [workspace guide](docs/FULLSCREEN_BRUSH.md) for gesture behavior and limits.
-
 ## Finding the controls
 
-The pinned **Photo / Clock / Brush / Watch / Depth** buttons jump directly to each section; the top bar displays the installed version. Depth Lab now defaults to **Use selected photo & clock**, with shared crop, imported font, colors, resized/masked live digits and drag placement. Clock controls are also shown directly beneath its preview. Disable that switch only for the original fixed solid-background diagnostic. See [the 0.3.1 guide](docs/PHOTO_DEPTH_EDITOR.md).
+Pinned **Photo / Clock / Watch** buttons jump directly to each section. Clock controls include independent hour/minute sizing and movement, width/height stretching, spacing, imported fonts, colors and preview-time inspection.
 
-## Depth lab — test before photo cutouts
+Depth Lab, stripe probes, transparency masks and both brush editors were removed at the user's request in0.5.0. Generated faces now use the normal two-table digital path (hour set0, minute set1); no depth/masking state can be re-enabled. This removal is not a confirmed diagnosis or hardware fix for the previously reported missing minutes.
 
-The ordinary captured/custom upload path is [user-reported working](docs/HARDWARE_RESULTS.md). **Photo depth remains unverified.** This build adds a separate solid-background / live-digits / transparent-stripe probe, optional no-overlay control, simulated preview, measured file size and `.bin` export. Follow [DEPTH_TEST.md](docs/DEPTH_TEST.md) across minute changes and screen sleep/wake.
-
-This is a firmware capability gate, **not the finished photo-depth workflow**. AI person segmentation, subject-mask editing and production foreground-image depth remain deferred. Version0.3.0 separately adds a **manual live-clock transparency brush** plus independent clock sizing/placement; see [clock editing](docs/CLOCK_EDITING.md). Manual glyph masking does not establish foreground-image layering support. No frozen-clock fallback or new network permission is introduced.
+**Analogue faces are next, pending a supplied reference file.** A Base64 text file is acceptable. No analogue-hand encoding is guessed or enabled yet.
 
 ## Preserved reference implementation
 
@@ -66,7 +60,6 @@ The original web prototype requires HTTPS (or localhost) and a browser supportin
 # Reference codec checks
 python -m pip install Pillow
 python roundtrip_test.py
-python depth_probe_test.py
 ```
 
 Pushes to `main`/`dev` run tests, lint, build, sign and publish a commit prerelease. Pull requests run validation without signing or publication. Successful publication retains the latest **five prereleases**; drafts and stable releases are excluded from cleanup.
@@ -77,10 +70,11 @@ GitHub signing uses repository secrets `KEYSTORE`, `KEY_ALIAS`, `KEYSTORE_PASSWO
 
 ## Next native milestones
 
-1. Hardware validation on the documented Brillia firmware; completion-check/finalization research.
-2. Saved projects and process-death restoration.
-3. User-facing `.bin` import and format diagnostics.
-4. Broader compatibility only after device-specific evidence.
+1. Inspect the supplied analogue reference before implementing live hands.
+2. Hardware validation on the documented Brillia firmware; completion-check/finalization research.
+3. Saved projects and process-death restoration.
+4. User-facing `.bin` import and format diagnostics.
+5. Broader compatibility only after device-specific evidence.
 
 ## License and provenance
 

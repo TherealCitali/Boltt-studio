@@ -21,7 +21,6 @@ jobs:
         run: |
           python -m pip install Pillow==12.1.1
           python roundtrip_test.py
-          python depth_probe_test.py
       - name: Test codec, transfer protocol and build
         run: |
           chmod +x gradlew
@@ -86,12 +85,10 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Full-screen brush studio: zoom/pan, erase/restore, draft undo/redo and Done/Cancel.
-            Photo depth is NOT established: test occlusion through minute changes and screen sleep/wake.
-            See docs/FULLSCREEN_BRUSH.md. Gesture/UI behavior still needs physical phone testing.
-            No AI subject segmentation or frozen-clock fallback is included.
-            CI checks codec/protocol logic; it does not establish physical watch compatibility or safe recovery.
-            Preserved HTML/Python prototypes and protocol notes remain in the repository.
+            Normal photo and digital-clock editor with independent sizing/placement, fonts, colors and BLE upload.
+            Depth Lab, transparency masks and both brush editors have been removed by request.
+            Generated faces use two live digit tables. Analogue support awaits a supplied reference file.
+            CI validates software behavior, not all physical watch configurations.
           files: release-files/*
   prune-prereleases:
     needs: prerelease

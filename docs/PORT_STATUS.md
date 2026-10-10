@@ -1,58 +1,29 @@
-# Native port status · 0.4.0
+# Native port status · 0.5.0
 
-## Full-screen canvas workspace
+## Available
 
-Version0.4.0 adds a dedicated draft-based brush studio with inverse-mapped native mask coordinates, pinch zoom/pan, erase/restore, soft edges, brush cursor, undo/redo, before/tint inspection and Done/Cancel protection. Source glyphs are unmasked so Restore remains reversible. See [FULLSCREEN_BRUSH.md](FULLSCREEN_BRUSH.md). Gesture/UI behavior requires physical phone testing; viewport/history math is JVM-tested.
+Native Kotlin/Compose photo and digital-clock editing: sampled image import with EXIF handling, crop zoom/pan, linked/independent hour-minute sizing and placement, width/height/spacing, fonts including TTF/OTF, colors, outline, drag/snap, preview-time inspection, document-picker export and native BLE upload.
 
-## Shared depth editor / discoverable controls
+Pinned navigation is Photo / Clock / Watch. Normal generated faces have two glyph tables and four live positions selecting0/0/1/1. The supplied captured Da Fit face remains a separate confirmed upload action with its original bytes unchanged. Current digital codec output retains the independently checked Python golden behavior.
 
-Version0.3.1 adds pinned Photo/Clock/Brush/Watch/Depth navigation and the installed version in the top bar. Depth defaults to the current editor photo/crop and actual clock glyphs, including independent sizing, placement, fonts, colors and masks. Drag and clock controls are available directly in Depth. The stripe is optional and vertically adjustable; the original solid diagnostic remains separate. Preview and encoded bytes automatically refresh, with stale send/export actions blocked. See [PHOTO_DEPTH_EDITOR.md](PHOTO_DEPTH_EDITOR.md).
+## Removed by request
 
-## Depth experiment and hardware report
+Depth Lab and test stripes; inline and full-screen transparency brushes; draft mask history, mask tint and mask controls; extra foreground-image encoding; per-position masking export; related navigation, guides and depth-specific fixtures/tests. Historical implementation remains available in Git history, not the current app UI/runtime.
 
-The user confirmed both captured and generated0.2.0 face uploads work on their setup; see [HARDWARE_RESULTS.md](HARDWARE_RESULTS.md). Multiple-image layering is still **unverified**. Version0.2.1 adds a separate depth probe and no-overlay control, cropped-alpha image encoding after live TimeNum, simulated preview, actual file size and export. Existing editor uploads remain foreground-free. Subject segmentation/mask tools and production foreground-image depth are not enabled. Version0.3.0 adds independent clock resizing/movement, width/height/spacing controls and manual screen-space clock-alpha painting; see [CLOCK_EDITING.md](CLOCK_EDITING.md). See [DEPTH_TEST.md](DEPTH_TEST.md).
+User photos, uploads and private diagnostic files are not committed or deleted by this app cleanup.
 
-## Implemented
+## Bluetooth and limits
 
-- Compose editor with the existing icon and warm Material 3 visual direction.
-- Sampled photo selection, EXIF orientation, crop zoom/pan/reset, 240×296 preview.
-- Clock drag placement and optional 4-pixel snap, bounded position sliders, center action, stacked/line layouts.
-- Three system font families and bounded TTF/OTF import (4 MiB); imported fonts use their own style. Digit cells default to42×66 and can be resized independently per hour/minute pair. Glyphs are cached during dragging. Font rendering is not claimed to match browser output.
-- Independent hour/minute RGB sliders, six-digit hex input, presets and outline. Output colors quantize to RGB565.
-- SAF export; bytes are snapshotted before opening the picker and retained in the editor ViewModel across rotation.
-- Strict Kotlin API 0x23 RLE codec, independent Python checksum/pixel regression fixtures.
-- Foreground-only experimental native Bluetooth upload and the original captured Da Fit face as a separate, confirmed first-test action. The captured asset is sent verbatim, not parsed and rebuilt.
-- Independent signing and commit prereleases, latest-five prerelease retention, manual stable workflow.
+Explicit device selection, Android10 Location/legacy Bluetooth permissions, Android12+ Nearby devices permissions, FEEA/FEE2/FEE3/FEE6 discovery, serialized GATT operations and notification subscription, negotiated MTU-derived packets, bounded watch-requested blocks/retries/timeouts, cancellation and diagnostic logs remain unchanged.
 
-## Native BLE implementation
+Uploads require the app in foreground; rotation is exempt from background cancellation. The watch's completion check and finalization fields are not fully understood. CI/build success does not establish device compatibility, safe recovery or a universal file-size limit. Follow [BLE_TESTING.md](BLE_TESTING.md).
 
-Target: Fire-Boltt Brillia, MOYOUNG-V2, firmware MOY-7QI2-2.0.1. Shared UUIDs do **not** verify model or firmware.
+## Hardware report and next work
 
-- Android ≤11: manifest BLUETOOTH/BLUETOOTH_ADMIN plus runtime fine location and enabled system Location for scanning. Android 12+: runtime BLUETOOTH_SCAN/CONNECT; scan data is not used for location. No Internet or broad storage permission.
-- Explicit device selection after a bounded 20-second scan; candidate filter and show-all option. No auto-connect or bonding shortcut.
-- FEEA service; FEE2 control, FEE3 notifications, FEE6 data. Validate writable/notify properties and subscribe through CCCD 2902 before transfer.
-- One serialized GATT operation, callback waiter installed before each request. Connection 20s, discovery 15s, ordinary operations 10s. MTU request 247 with 4s wait; default MTU23 means payload20. Negotiated payload is capped at244, never assumed.
-- Writes prefer no-response where supported, otherwise response writes. A local Android callback plus 8ms pacing serializes no-response writes; that callback is **not** a watch acknowledgement.
-- Incremental framed-notification decoder, bounded notification queue active before the handshake. BA acknowledgement is optional after4s, matching the captured sequence. Watch 74 requests drive 10,240-byte blocks. A next-block request is the protocol's implicit acknowledgement; there is no invented per-packet watch ACK.
-- At most three requests per block;20s next-request timeout;10min total transfer deadline. Reject bad indices/truncated requests/early completion. Retransmissions do not inflate unique-byte progress.
-- Only an explicit GATT invalid-length rejection permits a20-byte fallback at the **same offset**. Ambiguous write failures, timeouts and disconnects abort instead of blindly retrying.
-- FFFF completion requires every block served and a two-byte check value. The check algorithm remains unknown. Final commands74 four zero bytes, B4 `11 B5 11 00 00`,19 `0B` are preserved. UI reports watch-reported completion and local final-command submission, **not verified installation**.
-- Cancellation/disconnect cleanup, screen kept awake while sending, active operations cancelled when the activity leaves foreground (rotation exempt). Diagnostic log export; packet payloads, photo contents and font files are not logged. Device names/addresses are shown in the selector; inspect exported system error text before sharing.
+The user previously reported captured/custom digital uploads and imported TTF fonts working. A later masked face displayed hours without minutes; its exact cause remains unconfirmed. Removing depth is a user-requested simplification, not a verified firmware diagnosis or repair.
 
-## First hardware test
+Analogue support awaits the user's actual reference file (Base64 text accepted). Date/battery fields, project persistence and broader model compatibility remain unimplemented. No hands/date/battery element IDs are invented.
 
-1. Read [BLE_TESTING.md](BLE_TESTING.md). Confirm the documented Brillia firmware manually; do not test another model just because it advertises FEEA.
-2. Charge above30%, stop Da Fit, and keep the phone/watch close.
-3. Grant permissions, enable Bluetooth and (Android10) system Location. Scan and explicitly select your watch. Use show-all if its advertisement/name is not recognized.
-4. Send **captured Da Fit face** first. Confirm the risk dialog, keep the app visible, then inspect the watch. Only after a successful captured-face test try a generated face.
-5. Export diagnostics if anything fails. There is no guaranteed rollback or recovery claim.
+## Captured fixture exception
 
-## Still pending / not verified
-
-Saved projects/process-death restoration, editable `.bin` import, background-service uploads, device/firmware probing, completion-check verification, and multi-watch support. Session edits/fonts survive rotation but not process death. A confirmation dialog being prepared may be dismissed by rotation; prepare it again.
-
-No physical watch transfer has been performed by the assistant. JVM tests cover the pure protocol and codec; they do not emulate Android Bluetooth controllers or establish watch compatibility. UI, real Android10 permission behavior and hardware transfer still require device testing.
-
-## Captured dash compatibility exception
-
-The exact supplied `dafit_captured_face.bin` has an invalid unused1×1 dash pointer. Python silently yields transparency; native parsing normally rejects it. A full-file SHA256-gated exception substitutes a transparent dash **only for that fixture**. Rebuilding emits a valid dash and matches Python's checksum. The first-test upload sends the unmodified original file, preserving the capture rather than this rebuilt form.
+The exact original captured file contains a malformed unused1×1 dash pointer. Native parsing retains its full-file SHA256-gated transparent replacement, while rejecting arbitrary malformed files. Rebuilt bytes match the independent Python reference; captured-test upload still sends the untouched original.

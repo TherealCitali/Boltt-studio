@@ -8,7 +8,7 @@ Exact Android/watch firmware identifiers, battery conditions and repeated soak-t
 
 ## Photo-depth image layering · 0.2.1
 
-**Awaiting device results.** The baseline above does not establish support for two image elements, alpha compositing of foreground images, occlusion across minute redraws, or sleep/wake layering. Follow [DEPTH_TEST.md](DEPTH_TEST.md); do not infer a pass from CI or the app simulation.
+**Awaiting device results.** The baseline above does not establish support for two image elements, alpha compositing of foreground images, occlusion across minute redraws, or sleep/wake layering. See the historical depth-test guide in Git history; do not infer a pass from CI or the app simulation.
 
 ## Custom fonts
 
@@ -21,3 +21,7 @@ Awaiting device results. Four per-position masked glyph tables, variable dimensi
 ## Foreground stripe photograph
 
 The user supplied a watch photo showing the magenta stripe test rendered with time around11:28. This demonstrates the extra image is visible in that photographed state. The bright/overexposed overlap does not establish exact alpha blending or draw order, and a single photo does not establish minute-update or sleep/wake persistence. No full depth acceptance result is inferred. The personal photo is not committed to the public repository.
+
+## 0.5.0 cleanup
+
+Depth and both brush editors have been removed at the user's explicit request. Earlier reports above are historical, not descriptions of current features. The missing-minute report remains undiagnosed; the cleanup does not prove a firmware fix. Analogue development awaits a supplied reference.

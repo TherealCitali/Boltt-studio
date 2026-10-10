@@ -14,14 +14,14 @@ object FaceRenderer {
     private data class ScaleKey(val glyph: GlyphKey, val hourWidth: Int, val hourHeight: Int, val minuteWidth: Int, val minuteHeight: Int)
     private var scaleKey: ScaleKey? = null
     private var scaledGlyphs = emptyList<List<FaceImage>>()
-    data class Frame(val image: Bitmap, val face: MoyFace.Face, val maxOcclusion: Float = 0f)
+    data class Frame(val image: Bitmap, val face: MoyFace.Face)
     fun Bitmap.faceImage(): FaceImage {
         val data = IntArray(width * height); getPixels(data, 0, width, 0, 0, width, height)
         return FaceImage(width, height, data)
     }
     fun render(background: Bitmap?, x: Int, y: Int, stacked: Boolean, family: String,
         hourColor: Int, minuteColor: Int, outline: Boolean, zoom: Float, panX: Float, panY: Float, customTypeface: Typeface? = null,
-        design: ClockDesign? = null, mask: ByteArray? = null, previewDigits: List<Int> = listOf(1, 0, 0, 9)): Frame {
+        design: ClockDesign? = null, previewDigits: List<Int> = listOf(1, 0, 0, 9)): Frame {
         val bg = Bitmap.createBitmap(240, 296, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bg); canvas.drawColor(Color.BLACK)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -79,19 +79,9 @@ object FaceRenderer {
         }
         val scaled = scaledGlyphs
         val positions = layout.positions
-        val activeMask = mask?.takeIf { data -> data.any { (it.toInt() and 255) != 255 } }
-        // Each position needs its OWN table: a screen-space hole must not repeat at another slot.
-        val images = if (activeMask == null) scaled else positions.mapIndexed { i, point ->
-            scaled[i / 2].map { ClockMask.apply(it, point, activeMask) }
-        }
-        val maxOcclusion = if (activeMask == null) 0f else positions.indices.maxOf { i ->
-            (0..9).maxOf { digit ->
-                val before = scaled[i / 2][digit].pixels.sumOf { it ushr 24 }
-                val after = images[i][digit].pixels.sumOf { it ushr 24 }
-                if (before == 0) 0f else 1f - after.toFloat() / before
-            }
-        }
-        val sets = if (activeMask == null) listOf(0, 0, 1, 1) else listOf(0, 1, 2, 3)
+        // Normal digital faces only: one hour table and one minute table, no masks/foreground.
+        val images = scaled
+        val sets = listOf(0, 0, 1, 1)
         val preview = bg.copy(Bitmap.Config.ARGB_8888, true); val pc = Canvas(preview)
         previewDigits.forEachIndexed { i, digit ->
             val img = images[sets[i]][digit]
@@ -102,6 +92,6 @@ object FaceRenderer {
         val small = Bitmap.createScaledBitmap(preview, 140, 163, true)
         val face = MoyFace.Face(bg.faceImage(), images, positions, sets, small.faceImage(), FaceImage(1, 1, intArrayOf(0)))
         bg.recycle(); small.recycle()
-        return Frame(preview, face, maxOcclusion)
+        return Frame(preview, face)
     }
 }
