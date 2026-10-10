@@ -16,7 +16,7 @@ import dev.citali.bolttstudio.codec.ClockMask
 import kotlin.math.roundToInt
 
 @Composable
-fun ClockBrushPanel(state: EditorState, frame: FaceRenderer.Frame) {
+fun ClockBrushPanel(state: EditorState, frame: FaceRenderer.Frame, canOpen: Boolean, onOpenWorkspace: () -> Unit) {
     var painting by remember { mutableStateOf(false) }
     var restore by remember { mutableStateOf(false) }
     var feather by remember { mutableStateOf(true) }
@@ -25,6 +25,8 @@ fun ClockBrushPanel(state: EditorState, frame: FaceRenderer.Frame) {
     Card {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Depth lab · clock transparency brush", style = MaterialTheme.typography.titleLarge)
+            Button(onClick = onOpenWorkspace, enabled = canOpen, modifier = Modifier.fillMaxWidth()) { Text("Open full-screen brush studio") }
+            Text("Large canvas · pinch zoom · pan · undo/redo · Done / Cancel", style = MaterialTheme.typography.labelMedium)
             Text("Paint holes in live digits to reveal the photo. This is a fixed screen-space mask, not AI subject extraction or proof of foreground-image layering.", style = MaterialTheme.typography.bodySmall)
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text("Apply painted transparency", Modifier.weight(1f)); Switch(state.maskEnabled, { state.maskEnabled = it })

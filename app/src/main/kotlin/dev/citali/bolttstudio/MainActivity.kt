@@ -41,6 +41,8 @@ import dev.citali.bolttstudio.codec.MoyFace
 import dev.citali.bolttstudio.ui.FaceRenderer
 import dev.citali.bolttstudio.ui.ClockControls
 import dev.citali.bolttstudio.ui.ClockBrushPanel
+import dev.citali.bolttstudio.ui.BrushSession
+import dev.citali.bolttstudio.ui.BrushWorkspace
 import dev.citali.bolttstudio.codec.ClockDesign
 import dev.citali.bolttstudio.codec.ClockMask
 import kotlinx.coroutines.*
@@ -68,6 +70,7 @@ class EditorState : ViewModel() {
     var design by mutableStateOf(ClockDesign())
     var independent by mutableStateOf(false)
     var editHours by mutableStateOf(true)
+    var brushSession by mutableStateOf<BrushSession?>(null)
     var maskEnabled by mutableStateOf(false)
     var mask by mutableStateOf(ClockMask.empty())
     var previewMinute by mutableIntStateOf(609)
@@ -293,7 +296,13 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             Text(message, style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
             Spacer(Modifier.height(1.dp).then(section(brushAnchor)))
-            ClockBrushPanel(state, frame)
+            ClockBrushPanel(state, frame, canOpen = !watchUi.transferring && !busy, onOpenWorkspace = {
+                val clean = FaceRenderer.render(state.background, 0, 0, state.stacked, state.family,
+                    state.hours, state.minutes, state.outline, state.zoom, state.panX, state.panY,
+                    if (state.useCustomFont) state.customTypeface else null, state.design, null, state.previewDigits)
+                state.brushSession = BrushSession(state.mask, clean.face).also { it.minute = state.previewMinute }
+                clean.image.recycle()
+            })
             Spacer(Modifier.height(1.dp).then(section(watchAnchor)))
             WatchPanel(watch, frame.face, state, frame,
                 onChooseImage = {
@@ -304,6 +313,13 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             Text("${BuildConfig.VERSION_NAME} · ${BuildConfig.BUILD_COMMIT}\n${BuildConfig.BUILD_DATE}\nIndependent GPL-3.0 project; not an official Fire-Boltt or Da Fit app.", style = MaterialTheme.typography.labelSmall)
         }
         }
+    }
+    state.brushSession?.let { draft ->
+        BrushWorkspace(draft, draft.source, onDone = { mask ->
+            if (!state.mask.contentEquals(mask)) { state.checkpointMask(); state.mask = mask.clone() }
+            state.maskEnabled = true
+            state.brushSession = null
+        }, onCancel = { state.brushSession = null })
     }
 }
 @Composable private fun Control(label: String, value: Float, range: ClosedFloatingPointRange<Float>, update: (Float) -> Unit) {

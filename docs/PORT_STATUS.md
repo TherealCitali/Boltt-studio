@@ -1,4 +1,8 @@
-# Native port status · 0.3.1
+# Native port status · 0.4.0
+
+## Full-screen canvas workspace
+
+Version0.4.0 adds a dedicated draft-based brush studio with inverse-mapped native mask coordinates, pinch zoom/pan, erase/restore, soft edges, brush cursor, undo/redo, before/tint inspection and Done/Cancel protection. Source glyphs are unmasked so Restore remains reversible. See [FULLSCREEN_BRUSH.md](FULLSCREEN_BRUSH.md). Gesture/UI behavior requires physical phone testing; viewport/history math is JVM-tested.
 
 ## Shared depth editor / discoverable controls
 

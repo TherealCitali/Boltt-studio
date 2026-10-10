@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.3.1 beta / shared photo-depth editor.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.4.0 beta / full-screen brush studio.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -30,6 +30,10 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
 
 Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editing state survives rotation, not process death. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
+
+## Full-screen brush studio
+
+Open **Brush → Open full-screen brush studio** for a large canvas, pinch zoom/two-finger pan, erase/restore, brush cursor, feathering, undo/redo, before comparison and mask tint. **Done** applies a draft; Cancel/Back protects the original mask. Read the [workspace guide](docs/FULLSCREEN_BRUSH.md) for gesture behavior and limits.
 
 ## Finding the controls
 
