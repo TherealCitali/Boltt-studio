@@ -86,9 +86,10 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Native Kotlin/Compose editor and BLE upload, plus the experimental Depth lab layering probe.
+            Native clock editor: linked/independent size and movement, width/height/spacing, and manual clock-alpha brush.
             Photo depth is NOT established: test occlusion through minute changes and screen sleep/wake.
-            See docs/DEPTH_TEST.md. No AI segmentation, mask editor or frozen-clock fallback is included.
+            See docs/CLOCK_EDITING.md and docs/DEPTH_TEST.md. New glyph sizes/four-table masks need device testing.
+            No AI subject segmentation or frozen-clock fallback is included.
             CI checks codec/protocol logic; it does not establish physical watch compatibility or safe recovery.
             Preserved HTML/Python prototypes and protocol notes remain in the repository.
           files: release-files/*

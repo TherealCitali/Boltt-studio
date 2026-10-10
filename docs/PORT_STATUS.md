@@ -1,15 +1,15 @@
-# Native port status · 0.2.1
+# Native port status · 0.3.0
 
 ## Depth experiment and hardware report
 
-The user confirmed both captured and generated0.2.0 face uploads work on their setup; see [HARDWARE_RESULTS.md](HARDWARE_RESULTS.md). Multiple-image layering is still **unverified**. Version0.2.1 adds a separate depth probe and no-overlay control, cropped-alpha image encoding after live TimeNum, simulated preview, actual file size and export. Existing editor uploads remain foreground-free. Segmentation/mask tools and production photo-depth export are not enabled. See [DEPTH_TEST.md](DEPTH_TEST.md).
+The user confirmed both captured and generated0.2.0 face uploads work on their setup; see [HARDWARE_RESULTS.md](HARDWARE_RESULTS.md). Multiple-image layering is still **unverified**. Version0.2.1 adds a separate depth probe and no-overlay control, cropped-alpha image encoding after live TimeNum, simulated preview, actual file size and export. Existing editor uploads remain foreground-free. Subject segmentation/mask tools and production foreground-image depth are not enabled. Version0.3.0 adds independent clock resizing/movement, width/height/spacing controls and manual screen-space clock-alpha painting; see [CLOCK_EDITING.md](CLOCK_EDITING.md). See [DEPTH_TEST.md](DEPTH_TEST.md).
 
 ## Implemented
 
 - Compose editor with the existing icon and warm Material 3 visual direction.
 - Sampled photo selection, EXIF orientation, crop zoom/pan/reset, 240×296 preview.
 - Clock drag placement and optional 4-pixel snap, bounded position sliders, center action, stacked/line layouts.
-- Three system font families and bounded TTF/OTF import (4 MiB); imported fonts use their own style. Digit cells remain 42×66. Glyphs are cached during dragging. Font rendering is not claimed to match browser output.
+- Three system font families and bounded TTF/OTF import (4 MiB); imported fonts use their own style. Digit cells default to42×66 and can be resized independently per hour/minute pair. Glyphs are cached during dragging. Font rendering is not claimed to match browser output.
 - Independent hour/minute RGB sliders, six-digit hex input, presets and outline. Output colors quantize to RGB565.
 - SAF export; bytes are snapshotted before opening the picker and retained in the editor ViewModel across rotation.
 - Strict Kotlin API 0x23 RLE codec, independent Python checksum/pixel regression fixtures.
@@ -41,7 +41,7 @@ Target: Fire-Boltt Brillia, MOYOUNG-V2, firmware MOY-7QI2-2.0.1. Shared UUIDs do
 
 ## Still pending / not verified
 
-Saved projects/process-death restoration, editable `.bin` import, variable digit sizes, background-service uploads, device/firmware probing, completion-check verification, and multi-watch support. Session edits/fonts survive rotation but not process death. A confirmation dialog being prepared may be dismissed by rotation; prepare it again.
+Saved projects/process-death restoration, editable `.bin` import, background-service uploads, device/firmware probing, completion-check verification, and multi-watch support. Session edits/fonts survive rotation but not process death. A confirmation dialog being prepared may be dismissed by rotation; prepare it again.
 
 No physical watch transfer has been performed by the assistant. JVM tests cover the pure protocol and codec; they do not emulate Android Bluetooth controllers or establish watch compatibility. UI, real Android10 permission behavior and hardware transfer still require device testing.
 

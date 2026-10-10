@@ -52,3 +52,7 @@ A240×296 image has213,120bytes of alpha+RGB565 pixel data before row headers/RL
 - Export background-only decorations, live time and cropped subject foreground separately, plus thumbnail and measured file size.
 
 This is static photographic occlusion, not3D motion or parallax. Segmentation, mask editing, flexible digit sizing/spacing and production photo-depth export are **not implemented in0.2.1**. No model downloads or new network permissions are introduced by the probe.
+
+## 0.3.0 clarification
+
+Variable-size clock controls and a manual **clock-alpha** brush are now available separately; see [CLOCK_EDITING.md](CLOCK_EDITING.md). They do not implement AI subject segmentation or certify the foreground-image experiment described above.

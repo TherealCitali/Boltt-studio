@@ -13,15 +13,15 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.2.1 beta / depth-layering experiment.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.3.0 beta / resizable clock and manual transparency.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
 - Kotlin + Jetpack Compose Material 3; **not a WebView wrapper**.
 - Package `dev.citali.bolttstudio`, Android 8.0+, JDK 21.
-- 240 × 296 live preview with fixed 42 × 66 digit cells.
+- 240 × 296 live preview with resizable hour/minute cells (default42×66).
 - Background image picker, EXIF orientation, zoom/pan crop adjustments and reset.
-- Stacked or single-line clock, drag/4px snap, bounded position controls and centering.
+- Linked or independent hour/minute size and movement, proportional scaling, width/height stretching, digit spacing, drag/snap and fit-to-canvas arrangements.
 - Three system font families plus TTF/OTF import, separate hour/minute RGB/hex colors and outline.
 - `.bin` export through Android’s document picker; no broad storage permission.
 - Bounds-checked pure-Kotlin API `0x23` codec, tested against both supplied face files and Python-generated checksums.
@@ -35,7 +35,7 @@ Android10 uses legacy Bluetooth permissions and runtime Location for BLE scannin
 
 The ordinary captured/custom upload path is [user-reported working](docs/HARDWARE_RESULTS.md). **Photo depth remains unverified.** This build adds a separate solid-background / live-digits / transparent-stripe probe, optional no-overlay control, simulated preview, measured file size and `.bin` export. Follow [DEPTH_TEST.md](docs/DEPTH_TEST.md) across minute changes and screen sleep/wake.
 
-This is a firmware capability gate, **not the finished photo-depth workflow**. AI person segmentation, manual masks, digit size/spacing and production depth export are deferred until the layering experiment passes. No frozen-clock fallback or new network permission is introduced.
+This is a firmware capability gate, **not the finished photo-depth workflow**. AI person segmentation, subject-mask editing and production foreground-image depth remain deferred. Version0.3.0 separately adds a **manual live-clock transparency brush** plus independent clock sizing/placement; see [clock editing](docs/CLOCK_EDITING.md). Manual glyph masking does not establish foreground-image layering support. No frozen-clock fallback or new network permission is introduced.
 
 ## Preserved reference implementation
 
