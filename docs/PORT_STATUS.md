@@ -1,8 +1,8 @@
-# Native port status · 0.5.1
+# Native port status · 0.6.0
 
-## Binary import-for-upload
+## Preview-first local studio
 
-Version0.5.1 adds a document-picker .bin importer under Watch. It bounds stream reads to2MiB, validates the supported API0x23 digital structure, displays the embedded thumbnail/size/SHA-256 and retains original bytes for an explicit confirmed upload. It does not reconstruct the binary, change the editor project, restore depth controls, or accept unknown analogue formats. Files stay in process memory; selection survives rotation but not process termination. See [IMPORTING.md](IMPORTING.md).
+0.6.0 removes binary import entirely, adds adaptive/themed launcher resources and restores a single private editor draft across restarts. Photo/font files are retained locally. The preview stays outside the scrolling/resizable settings sheet, and remains alongside settings in wide windows. Pages separate crop, clock layout, style, preview/export, watch and information. Elastic overscroll uses the same Miuix factory as ShadowRPC. See [STUDIO_WORKSPACE.md](STUDIO_WORKSPACE.md).
 
 ## Available
 
@@ -26,7 +26,7 @@ Uploads require the app in foreground; rotation is exempt from background cancel
 
 The user previously reported captured/custom digital uploads and imported TTF fonts working. A later masked face displayed hours without minutes; its exact cause remains unconfirmed. Removing depth is a user-requested simplification, not a verified firmware diagnosis or repair.
 
-Analogue support awaits the user's actual reference file (Base64 text accepted). Date/battery fields, project persistence and broader model compatibility remain unimplemented. No hands/date/battery element IDs are invented.
+Analogue and widget references have been received and privately inspected, but their editor/encoder support is not part of this UI update. Date/battery widgets and broader model compatibility remain unimplemented. No guessed fields have been shipped.
 
 ## Captured fixture exception
 

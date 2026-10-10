@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.5.1 beta / digital editor and binary upload.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.6.0 beta / persistent preview-first studio.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -23,27 +23,31 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Background image picker, EXIF orientation, zoom/pan crop adjustments and reset.
 - Linked or independent hour/minute size and movement, proportional scaling, width/height stretching, digit spacing, drag/snap and fit-to-canvas arrangements.
 - Three system font families plus TTF/OTF import, separate hour/minute RGB/hex colors and outline.
-- `.bin` export and **Import .bin face** under Watch, with validation, embedded thumbnail, size/SHA-256 and original-byte upload. No broad storage permission.
+- `.bin` export and direct current/captured-face upload. Binary import was removed by request.
+- Auto-restored local draft, including a private photo copy and custom font.
+- Always-visible preview above a resizable settings sheet; split view in wide windows.
+- Adaptive launcher icon with Android 13+ monochrome themed layer.
 - Bounds-checked pure-Kotlin API `0x23` codec, tested against both supplied face files and Python-generated checksums.
 
 - Explicit watch selection, Android-version Bluetooth/scan permissions, service discovery, MTU-derived packet sizes, serialized GATT writes and watch-requested blocks.
 - Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
 
-Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editing state survives rotation, not process death. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
+Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editor changes are saved locally and restored after restart. Connections and pending transfers are never restored. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
 
 ## Finding the controls
 
-Pinned **Photo / Clock / Watch** buttons jump directly to each section. Clock controls include independent hour/minute sizing and movement, width/height stretching, spacing, imported fonts, colors and preview-time inspection.
+The preview remains visible while the non-modal sheet opens separate **Photo**, **Clock**, **Style**, **Preview & export**, **Watch** and **About** pages. Drag its grab area or use Expand/Less; Android Back returns to Design. Clock controls include independent hour/minute sizing and movement, width/height stretching, spacing, imported fonts, colors and preview-time inspection.
 
 Depth Lab, stripe probes, transparency masks and both brush editors were removed at the user's request in0.5.0. Generated faces now use the normal two-table digital path (hour set0, minute set1); no depth/masking state can be re-enabled. This removal is not a confirmed diagnosis or hardware fix for the previously reported missing minutes.
 
 **Analogue faces are next, pending a supplied reference file.** A Base64 text file is acceptable. No analogue-hand encoding is guessed or enabled yet.
 
-## Import and send a custom .bin
+## Local draft and preview workspace
 
-In **Watch**, choose **Import .bin face → Choose .bin file**. The file is checked locally and kept as an immutable snapshot. Review its embedded thumbnail, byte size and SHA-256, connect to your watch, then choose **Send imported face…** and confirm. It sends the original bytes, not a rebuilt face; your editor design is unchanged.
+Changes to photo/crop, clock geometry, fonts, colors, outline, snapping and preview time are saved automatically. The photo and imported font are copied into app-private storage before metadata references them, so deleting the original picker file does not break the draft. Only one draft is retained; clearing app data/uninstalling deletes it. Previously lost sessions cannot be recovered. See [STUDIO_WORKSPACE.md](docs/STUDIO_WORKSPACE.md).
 
-Import-for-upload currently supports validated API0x23 digital faces up to2MiB (an application bound, not a measured watch limit). Raw binary is required, not Base64 text. Unknown analogue/other element layouts are rejected until their format is understood. Structural validation does not guarantee firmware compatibility. See [IMPORTING.md](docs/IMPORTING.md).
+The original Boltt layout takes visual inspiration from [LunarTune](https://github.com/cognitiveshadows03/LunarTune)'s rounded tonal settings groups. It uses Material You, Montserrat UI typography and the same Miuix 0.9.3 elastic edge factory as ShadowRPC (not the Miuix UI theme). Miuix Apache-2.0 and Montserrat OFL notices are bundled in assets/licenses.
+
 
 ## Preserved reference implementation
 
@@ -78,8 +82,8 @@ GitHub signing uses repository secrets `KEYSTORE`, `KEY_ALIAS`, `KEYSTORE_PASSWO
 
 1. Inspect the supplied analogue reference before implementing live hands.
 2. Hardware validation on the documented Brillia firmware; completion-check/finalization research.
-3. Saved projects and process-death restoration.
-4. Editable `.bin` project import and broader format diagnostics.
+3. Multiple named projects (one automatic draft is now implemented).
+4. Broader format diagnostics; `.bin` import removed by user request.
 5. Broader compatibility only after device-specific evidence.
 
 ## License and provenance

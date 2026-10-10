@@ -1,4 +1,5 @@
 [versions]
+miuix = "0.9.3"
 agp = "9.2.1"
 kotlin = "2.4.0"
 compose = "1.12.0-beta02"
@@ -9,6 +10,7 @@ coreKtx = "1.17.0"
 coroutines = "1.10.2"
 
 [libraries]
+miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui-android", version.ref = "miuix" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }

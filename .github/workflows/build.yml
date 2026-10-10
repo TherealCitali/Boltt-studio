@@ -85,9 +85,10 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Custom .bin import-for-upload: bounded validation, embedded thumbnail, size/SHA-256 and exact original-byte transfer.
-            Depth Lab, transparency masks and both brush editors have been removed by request.
-            The normal digital editor remains. Analogue/unknown formats are not yet supported by import.
+            Preview-first studio with a resizable settings sheet and grouped pages, inspired by LunarTune.
+            Local draft restoration includes the photo, crop, geometry, custom font, colors and preview time.
+            Adaptive/themed icon and ShadowRPC-style Miuix elastic overscroll. Binary import removed by request.
+            Normal digital editing/export/BLE retained; no depth features restored or new analogue/widget encoding.
             CI validates software behavior, not all physical watch configurations.
           files: release-files/*
   prune-prereleases:

@@ -12,8 +12,8 @@ android {
         applicationId = "dev.citali.bolttstudio"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.5.1"
+        versionCode = 9
+        versionName = "0.6.0"
         val sha = providers.environmentVariable("GITHUB_SHA").orNull
             ?.takeIf { it.matches(Regex("[0-9a-fA-F]{40}")) }?.take(12) ?: "local"
         buildConfigField("String", "BUILD_COMMIT", "\"$sha\"")
@@ -40,6 +40,8 @@ kotlin {
     }
 }
 dependencies {
+    // Same elastic edge effect as ShadowRPC; no Miuix theme or widgets.
+    implementation(libs.miuix.ui)
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
