@@ -86,9 +86,9 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Native clock editor: linked/independent size and movement, width/height/spacing, and manual clock-alpha brush.
+            Depth Lab now uses your selected photo and clock; pinned section navigation makes controls easy to find.
             Photo depth is NOT established: test occlusion through minute changes and screen sleep/wake.
-            See docs/CLOCK_EDITING.md and docs/DEPTH_TEST.md. New glyph sizes/four-table masks need device testing.
+            See docs/PHOTO_DEPTH_EDITOR.md. The solid-background diagnostic remains available separately.
             No AI subject segmentation or frozen-clock fallback is included.
             CI checks codec/protocol logic; it does not establish physical watch compatibility or safe recovery.
             Preserved HTML/Python prototypes and protocol notes remain in the repository.

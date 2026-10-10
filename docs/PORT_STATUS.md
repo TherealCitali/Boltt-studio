@@ -1,4 +1,8 @@
-# Native port status · 0.3.0
+# Native port status · 0.3.1
+
+## Shared depth editor / discoverable controls
+
+Version0.3.1 adds pinned Photo/Clock/Brush/Watch/Depth navigation and the installed version in the top bar. Depth defaults to the current editor photo/crop and actual clock glyphs, including independent sizing, placement, fonts, colors and masks. Drag and clock controls are available directly in Depth. The stripe is optional and vertically adjustable; the original solid diagnostic remains separate. Preview and encoded bytes automatically refresh, with stale send/export actions blocked. See [PHOTO_DEPTH_EDITOR.md](PHOTO_DEPTH_EDITOR.md).
 
 ## Depth experiment and hardware report
 

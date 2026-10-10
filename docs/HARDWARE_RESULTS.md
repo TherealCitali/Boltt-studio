@@ -17,3 +17,7 @@ The user also reported that imported TTF clock fonts worked successfully. This d
 ## Resized / independently positioned / manually masked clock · 0.3.0
 
 Awaiting device results. Four per-position masked glyph tables, variable dimensions and alpha-mask redraw behavior require testing separately from foreground-image layering.
+
+## Foreground stripe photograph
+
+The user supplied a watch photo showing the magenta stripe test rendered with time around11:28. This demonstrates the extra image is visible in that photographed state. The bright/overexposed overlap does not establish exact alpha blending or draw order, and a single photo does not establish minute-update or sleep/wake persistence. No full depth acceptance result is inferred. The personal photo is not committed to the public repository.

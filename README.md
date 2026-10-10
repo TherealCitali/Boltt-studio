@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.3.0 beta / resizable clock and manual transparency.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.3.1 beta / shared photo-depth editor.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -30,6 +30,10 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
 
 Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. There is **no Internet or broad storage permission**. Uploads require the app in the foreground. Editing state survives rotation, not process death. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
+
+## Finding the controls
+
+The pinned **Photo / Clock / Brush / Watch / Depth** buttons jump directly to each section; the top bar displays the installed version. Depth Lab now defaults to **Use selected photo & clock**, with shared crop, imported font, colors, resized/masked live digits and drag placement. Clock controls are also shown directly beneath its preview. Disable that switch only for the original fixed solid-background diagnostic. See [the 0.3.1 guide](docs/PHOTO_DEPTH_EDITOR.md).
 
 ## Depth lab — test before photo cutouts
 

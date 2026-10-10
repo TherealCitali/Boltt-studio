@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.citali.bolttstudio.BuildConfig
+import dev.citali.bolttstudio.EditorState
 import dev.citali.bolttstudio.bluetooth.WatchViewModel
 import dev.citali.bolttstudio.codec.MoyFace
 import kotlinx.coroutines.*
@@ -22,7 +23,8 @@ import kotlinx.coroutines.*
 private data class PendingUpload(val label: String, val bytes: ByteArray, val depthProbe: Boolean = false, val modifiedClock: Boolean = false)
 
 @Composable
-fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
+fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face, editor: EditorState, editorFrame: FaceRenderer.Frame,
+    onChooseImage: () -> Unit, onEditStyle: () -> Unit, depthAnchor: Modifier) {
     val ui by watch.ui.collectAsState()
     val context = LocalContext.current; val scope = rememberCoroutineScope()
     var showAll by remember { mutableStateOf(false) }
@@ -121,11 +123,15 @@ fun WatchPanel(watch: WatchViewModel, face: MoyFace.Face) {
             }
         }
     }
-    DepthProbePanel(ready = ui.ready && !preparing, transferring = ui.transferring || ui.connecting, onUpload = { result ->
-        acknowledged = false
-        pending = PendingUpload(if (result.face.foreground != null) "EXPERIMENTAL depth layering probe" else "Depth probe — no-overlay control",
-            result.bytes.clone(), depthProbe = true)
-    })
+    Spacer(Modifier.height(1.dp).then(depthAnchor))
+    DepthProbePanel(ready = ui.ready && !preparing, transferring = ui.transferring || ui.connecting,
+        editor = editor, frame = editorFrame, onChooseImage = onChooseImage, onEditStyle = onEditStyle,
+        onUpload = { result, usesEditor ->
+            acknowledged = false
+            pending = PendingUpload(if (usesEditor) "Current photo & clock · depth test" else "Original solid-background diagnostic",
+                result.bytes.clone(), depthProbe = result.face.foreground != null,
+                modifiedClock = result.face.digits.size == 4 || result.face.digits.flatten().any { it.width != 42 || it.height != 66 })
+        })
     pending?.let { (label, bytes, depthProbe, modifiedClock) ->
         AlertDialog(onDismissRequest = { pending = null }, title = { Text("Send watchface?") },
             text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {

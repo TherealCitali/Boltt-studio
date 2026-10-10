@@ -66,4 +66,31 @@ object DepthProbe {
             FaceImage(1, 1, intArrayOf(0)), foreground)
         return Result(face, FaceImage(240, 296, composite), MoyFace.build(face))
     }
+    private val editorStripe: ImageLayer by lazy { requireNotNull(create().face.foreground) }
+
+    /** Use the actual cropped editor background and LIVE glyph tables, never a flattened clock. */
+    fun fromEditor(source: MoyFace.Face, digits: List<Int>, includeForeground: Boolean, stripeY: Int = 139): Result {
+        require(digits.size == 4 && digits.all { it in 0..9 })
+        require(stripeY in 0..278)
+        val foreground = if (includeForeground) {
+            val prototype = editorStripe
+            prototype.copy(position = Point(prototype.position.x, stripeY))
+        } else null
+        val pixels = source.background.pixels.clone()
+        fun draw(image: FaceImage, point: Point) {
+            require(point.x >= 0 && point.y >= 0 && point.x + image.width <= 240 && point.y + image.height <= 296)
+            image.pixels.forEachIndexed { i, pixel ->
+                val at = (point.y + i / image.width) * 240 + point.x + i % image.width
+                val alpha = pixel ushr 24; val below = pixels[at]
+                fun channel(shift: Int) = ((((pixel ushr shift) and 255) * alpha + ((below ushr shift) and 255) * (255 - alpha) + 127) / 255) shl shift
+                pixels[at] = 0xff000000.toInt() or channel(16) or channel(8) or channel(0)
+            }
+        }
+        digits.forEachIndexed { i, digit -> draw(source.digits[source.sets[i]][digit], source.positions[i]) }
+        foreground?.let { draw(it.image, it.position) }
+        val thumbnail = FaceImage(140, 163, IntArray(140 * 163) { i -> pixels[(i / 140 * 296 / 163) * 240 + i % 140 * 240 / 140] })
+        val face = source.copy(preview = thumbnail, foreground = foreground)
+        return Result(face, FaceImage(240, 296, pixels), MoyFace.build(face))
+    }
+
 }

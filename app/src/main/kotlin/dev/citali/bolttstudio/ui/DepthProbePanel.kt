@@ -4,97 +4,136 @@ import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.citali.bolttstudio.EditorState
 import dev.citali.bolttstudio.codec.DepthProbe
+import dev.citali.bolttstudio.codec.MoyFace
 import kotlinx.coroutines.*
+import kotlin.math.roundToInt
 
 class DepthProbeState : ViewModel() {
-    var result by mutableStateOf<DepthProbe.Result?>(null)
+    var useEditor by mutableStateOf(true)
     var includeForeground by mutableStateOf(true)
-    var busy by mutableStateOf(false)
+    var stripeY by mutableIntStateOf(139)
     var message by mutableStateOf("")
     var pendingExport: ByteArray? = null
-    fun prepare() {
-        if (busy) return
-        val overlay = includeForeground
-        busy = true
-        viewModelScope.launch {
-            try {
-                result = withContext(Dispatchers.Default) { DepthProbe.create(overlay) }
-                message = "Prepared. Preview is a simulation, not evidence of firmware layering."
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { message = "Cannot prepare test: ${error.message}" }
-            finally { busy = false }
-        }
-    }
 }
+private data class DepthRequest(val face: MoyFace.Face?, val digits: List<Int>, val overlay: Boolean, val stripeY: Int)
+private data class PreparedDepth(val request: DepthRequest, val result: DepthProbe.Result?, val error: String? = null)
 
 @Composable
-fun DepthProbePanel(ready: Boolean, transferring: Boolean, onUpload: (DepthProbe.Result) -> Unit,
+fun DepthProbePanel(ready: Boolean, transferring: Boolean, editor: EditorState, frame: FaceRenderer.Frame,
+    onChooseImage: () -> Unit, onEditStyle: () -> Unit, onUpload: (DepthProbe.Result, Boolean) -> Unit,
     state: DepthProbeState = viewModel()) {
     val context = LocalContext.current; val scope = rememberCoroutineScope()
+    var writing by remember { mutableStateOf(false) }
+    val request = DepthRequest(if (state.useEditor) frame.face else null,
+        if (state.useEditor) editor.previewDigits else listOf(1, 0, 0, 9), state.includeForeground,
+        if (state.useEditor) state.stripeY else 139)
+    // Debounce drag/crop events. Never expose stale bytes when the selected design changes.
+    val prepared by produceState<PreparedDepth?>(null, request) {
+        delay(120)
+        value = try {
+            val result = withContext(Dispatchers.Default) {
+                if (request.face != null) DepthProbe.fromEditor(request.face, request.digits, request.overlay, request.stripeY)
+                else DepthProbe.create(request.overlay)
+            }
+            PreparedDepth(request, result)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { PreparedDepth(request, null, error.message ?: "Cannot encode design") }
+    }
+    val current = prepared?.takeIf { it.request == request }
+    val result = current?.result
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
         val bytes = state.pendingExport; state.pendingExport = null
         if (uri != null && bytes != null) scope.launch {
-            state.busy = true
+            writing = true
             try {
-                withContext(Dispatchers.IO) {
-                    (context.contentResolver.openOutputStream(uri, "wt") ?: error("Cannot open output")).use { it.write(bytes) }
-                }
-                state.message = "Exported ${bytes.size} bytes. Firmware layering is still unverified."
+                withContext(Dispatchers.IO) { (context.contentResolver.openOutputStream(uri, "wt") ?: error("Cannot open output")).use { it.write(bytes) } }
+                state.message = "Exported ${bytes.size} bytes. Inspect redraws and wake on the watch."
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { state.message = "Could not export test file" }
-            finally { state.busy = false }
+            finally { writing = false }
         }
     }
     Card {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Depth lab · firmware probe", style = MaterialTheme.typography.titleLarge)
-            Text("Depth support: UNVERIFIED", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-            Text("Before photo cutouts: test whether this firmware keeps a transparent image in front of four LIVE digits, including after redraws. This does not modify your editor design.")
+            Text("Depth lab · your photo & clock", style = MaterialTheme.typography.titleLarge)
+            Text("Experimental — redraw/wake behavior not yet confirmed", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("Include foreground stripe", Modifier.weight(1f))
-                Switch(state.includeForeground, {
-                    state.includeForeground = it; state.result = null; state.message = ""
-                }, enabled = !state.busy && !transferring)
+                Text("Use selected photo & clock", Modifier.weight(1f))
+                Switch(state.useEditor, { state.useEditor = it; state.message = "" }, enabled = !transferring && !writing)
             }
-            Text(if (state.includeForeground) "Magenta stripe: opaque center, 25% / 50% alpha edges, and a fully clear window. Image element is AFTER live time."
-                else "Control test: same background and four live digits, without the extra image element.", style = MaterialTheme.typography.bodySmall)
-            OutlinedButton(enabled = !state.busy && !transferring, onClick = state::prepare) { Text("Prepare test face") }
-            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            state.result?.let { result ->
-                val bitmap = remember(result) {
-                    Bitmap.createBitmap(result.simulatedPreview.pixels, 240, 296, Bitmap.Config.ARGB_8888).asImageBitmap()
+            Text(if (state.useEditor) "Shared with the main editor: photo crop, font, colors, sizes, placement and clock-alpha brush. Drag this preview to move the clock."
+                else "Original solid-background diagnostic: fixed seven-segment digits at 10:09 in the simulation. Turn the switch on to edit your photo and clock.", style = MaterialTheme.typography.bodySmall)
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text("Show test stripe", Modifier.weight(1f))
+                Switch(state.includeForeground, { state.includeForeground = it }, enabled = !transferring && !writing)
+            }
+            if (state.useEditor) {
+                OutlinedButton(enabled = !transferring && !writing, onClick = onChooseImage) { Text("Choose / replace photo") }
+                Text("Shared photo crop")
+                Text("Zoom · %.2f×".format(editor.zoom)); Slider(editor.zoom, { editor.zoom = it }, valueRange = 1f..3f)
+                Text("Horizontal crop"); Slider(editor.panX, { editor.panX = it }, valueRange = -1f..1f)
+                Text("Vertical crop"); Slider(editor.panY, { editor.panY = it }, valueRange = -1f..1f)
+            }
+            val simulated = remember(result) { result?.simulatedPreview?.let { Bitmap.createBitmap(it.pixels, 240, 296, Bitmap.Config.ARGB_8888).asImageBitmap() } }
+            val shown = simulated ?: if (state.useEditor) frame.image.asImageBitmap() else null
+            if (shown != null) Image(shown, "Depth preview: drag to move selected clock group",
+                Modifier.width(240.dp).height(296.dp).align(androidx.compose.ui.Alignment.CenterHorizontally)
+                    .pointerInput(state.useEditor, editor.independent, editor.editHours, editor.snap) {
+                        if (state.useEditor) {
+                            var start = editor.design; var dx = 0f; var dy = 0f
+                            detectDragGestures(onDragStart = { start = editor.design; dx = 0f; dy = 0f }) { change, delta ->
+                                change.consume(); dx += delta.x * 240 / size.width; dy += delta.y * 296 / size.height
+                                val step = if (editor.snap) 4 else 1
+                                editor.design = start.move(editor.editHours, editor.independent,
+                                    (dx / step).roundToInt() * step, (dy / step).roundToInt() * step)
+                            }
+                        }
+                    })
+            if (current == null) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text("Updating current design… Send/export waits for this preview to match.", style = MaterialTheme.typography.labelSmall)
+            }
+            current?.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (state.useEditor) {
+                Text("Preview · %02d:%02d (watch time stays live)".format(editor.previewMinute / 60, editor.previewMinute % 60), style = MaterialTheme.typography.labelSmall)
+                if (state.includeForeground) {
+                    Text("Stripe vertical position · ${state.stripeY} px")
+                    Slider(state.stripeY.toFloat(), { state.stripeY = it.roundToInt() }, valueRange = 0f..278f)
                 }
-                Image(bitmap, "Simulated depth test at 10:09; watch rendering is unverified",
-                    Modifier.width(240.dp).height(296.dp).align(androidx.compose.ui.Alignment.CenterHorizontally))
-                Text("Simulation · 10:09, not the watch's current time", style = MaterialTheme.typography.labelSmall)
-                Text("Encoded file: ${result.bytes.size} bytes · all 4 time positions are live")
-                result.face.foreground?.let { layer ->
-                    Text("Cropped foreground: ${layer.image.width}×${layer.image.height} at (${layer.position.x}, ${layer.position.y})", style = MaterialTheme.typography.bodySmall)
+                HorizontalDivider()
+                Text("Clock controls · size & movement", style = MaterialTheme.typography.titleMedium)
+                ClockControls(editor)
+                TextButton(onClick = onEditStyle) { Text("Font, colors & outline → Clock section") }
+                Text("Use the pinned Brush button for clock transparency painting. A new crop does not move the brush mask; check alignment after recropping.", style = MaterialTheme.typography.bodySmall)
+            }
+            result?.let { encoded ->
+                Text("Encoded file: ${encoded.bytes.size} bytes · four live digit positions")
+                encoded.face.foreground?.let { layer -> Text("Stripe: ${layer.image.width}×${layer.image.height} at (${layer.position.x}, ${layer.position.y})", style = MaterialTheme.typography.bodySmall) }
+                Button(enabled = ready && !transferring && !writing, modifier = Modifier.fillMaxWidth(), onClick = { onUpload(encoded, state.useEditor) }) {
+                    Text(if (state.useEditor) "Send current photo depth test…" else "Send original diagnostic…")
                 }
-                Text("On the watch: inspect initially, across at least two minute changes, then after screen sleep/wake. Does the stripe stay in front? Are the clear window and translucent edges correct? Check all four digits (an hour rollover is needed to observe hour updates).", style = MaterialTheme.typography.bodySmall)
-                Button(enabled = ready && !state.busy && !transferring, modifier = Modifier.fillMaxWidth(), onClick = { onUpload(result) }) {
-                    Text(if (result.face.foreground != null) "Send depth probe…" else "Send no-overlay control…")
-                }
-                TextButton(enabled = !state.busy && !transferring, onClick = {
-                    state.pendingExport = result.bytes.clone()
-                    runCatching { export.launch(if (result.face.foreground != null) "Boltt-depth-probe-overlay.bin" else "Boltt-depth-probe-control.bin") }
+                TextButton(enabled = !transferring && !writing, onClick = {
+                    state.pendingExport = encoded.bytes.clone()
+                    runCatching { export.launch(if (state.useEditor) "Boltt-photo-depth-test.bin" else "Boltt-depth-diagnostic.bin") }
                         .onFailure { state.pendingExport = null; state.message = "Document picker unavailable" }
-                }) { Text("Export test .bin") }
-                if (!ready) Text("Connect your watch above to enable sending.", style = MaterialTheme.typography.bodySmall)
+                }) { Text("Export this depth test .bin") }
             }
+            if (!ready) Text("Tap the pinned Watch button to connect, then return to Depth.", style = MaterialTheme.typography.bodySmall)
             if (state.message.isNotBlank()) Text(state.message, style = MaterialTheme.typography.bodySmall)
-            Text("Upload completion is not a depth-test pass. If redraws break occlusion or image blending fails, genuine depth remains unsupported; no frozen-clock screenshot fallback. AI segmentation, mask brushes and photo-depth export are not enabled in this build.", style = MaterialTheme.typography.bodySmall)
+            Text("The stripe is a test image, not a subject cutout. Turn it off for a photo-and-clock control. Inspect changing minutes and screen sleep/wake; one photo does not establish persistent layering. No AI segmentation or frozen-clock fallback is included.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

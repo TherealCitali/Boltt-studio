@@ -19,6 +19,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -86,9 +88,17 @@ class EditorState : ViewModel() {
     var zoom by mutableFloatStateOf(1f); var panX by mutableFloatStateOf(0f); var panY by mutableFloatStateOf(0f)
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
     val context = LocalContext.current; val scope = rememberCoroutineScope()
+    val photoAnchor = remember { BringIntoViewRequester() }
+    val clockAnchor = remember { BringIntoViewRequester() }
+    val styleAnchor = remember { BringIntoViewRequester() }
+    val brushAnchor = remember { BringIntoViewRequester() }
+    val watchAnchor = remember { BringIntoViewRequester() }
+    val depthAnchor = remember { BringIntoViewRequester() }
+    fun jump(anchor: BringIntoViewRequester) { scope.launch { anchor.bringIntoView() } }
     val watchUi by watch.ui.collectAsState()
     val view = LocalView.current
     DisposableEffect(watchUi.transferring) {
@@ -192,7 +202,19 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             state.sampleLoaded = true
         }
     }
-    Scaffold(topBar = { TopAppBar(title = { Text("Boltt Studio") }) }) { padding ->
+    Scaffold(topBar = {
+        Column {
+            TopAppBar(title = { Text("Boltt Studio · ${BuildConfig.VERSION_NAME}") })
+            Row(Modifier.fillMaxWidth()) {
+                listOf("Photo" to photoAnchor, "Clock" to clockAnchor, "Brush" to brushAnchor,
+                    "Watch" to watchAnchor, "Depth" to depthAnchor).forEach { (label, anchor) ->
+                    TextButton(onClick = { jump(anchor) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 2.dp)) {
+                        Text(label, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
+    }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("BRILLIA / NATIVE PREVIEW", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text("Make time your own.", style = MaterialTheme.typography.headlineLarge)
@@ -210,6 +232,7 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                     })
             Text(if (state.independent) "Drag to move selected ${if (state.editHours) "hours" else "minutes"}." else "Drag to move the whole clock.", style = MaterialTheme.typography.labelMedium)
             Text("240 × 296 · API 0x23 · live, variable-size digits", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(1.dp).bringIntoViewRequester(photoAnchor))
             Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Background", style = MaterialTheme.typography.titleLarge)
                 Button(enabled = !busy && !watchUi.transferring, onClick = { runCatching { importImage.launch(arrayOf("image/*")) }.onFailure { message = "No document picker available." } }) { Text("Choose image") }
@@ -218,9 +241,11 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                 Control("Horizontal crop", state.panX, -1f..1f) { state.panX = it }
                 Control("Vertical crop", state.panY, -1f..1f) { state.panY = it }
             } }
+            Spacer(Modifier.height(1.dp).bringIntoViewRequester(clockAnchor))
             Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Clock", style = MaterialTheme.typography.titleLarge)
+                Text("Clock controls · size, position & style", style = MaterialTheme.typography.titleLarge)
                 ClockControls(state)
+                Spacer(Modifier.height(1.dp).bringIntoViewRequester(styleAnchor))
                 Row { listOf("sans-serif" to "Sans", "serif" to "Serif", "monospace" to "Mono").forEach { (font, label) ->
                     FilterChip(selected = !state.useCustomFont && state.family == font, onClick = { state.family = font; state.useCustomFont = false }, label = { Text(label) }, modifier = Modifier.padding(end = 4.dp))
                 } }
@@ -250,8 +275,14 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
             }) { Text("Export watchface .bin") }
             Text(message, style = MaterialTheme.typography.bodyMedium)
             HorizontalDivider()
+            Spacer(Modifier.height(1.dp).bringIntoViewRequester(brushAnchor))
             ClockBrushPanel(state, frame)
-            WatchPanel(watch, frame.face)
+            Spacer(Modifier.height(1.dp).bringIntoViewRequester(watchAnchor))
+            WatchPanel(watch, frame.face, state, frame,
+                onChooseImage = {
+                    if (!busy && !watchUi.transferring) runCatching { importImage.launch(arrayOf("image/*")) }
+                        .onFailure { message = "No document picker available" }
+                }, onEditStyle = { jump(styleAnchor) }, depthAnchor = Modifier.bringIntoViewRequester(depthAnchor))
             Text("Session edits survive rotation, not process termination. Full .bin import and saved projects are still pending. Uploads stop when the app leaves the foreground; keep it open until finished.", style = MaterialTheme.typography.bodySmall)
             Text("${BuildConfig.VERSION_NAME} · ${BuildConfig.BUILD_COMMIT}\n${BuildConfig.BUILD_DATE}\nIndependent GPL-3.0 project; not an official Fire-Boltt or Da Fit app.", style = MaterialTheme.typography.labelSmall)
         }
