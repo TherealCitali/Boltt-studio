@@ -3,6 +3,10 @@ package dev.citali.bolttstudio
 import androidx.compose.ui.graphics.asAndroidBitmap
 import android.graphics.Bitmap
 import java.io.File
+import androidx.lifecycle.ViewModelProvider
+import androidx.test.platform.app.InstrumentationRegistry
+import dev.citali.bolttstudio.fonts.FontCatalog
+import dev.citali.bolttstudio.fonts.FontLibraryState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.core.view.ViewCompat
@@ -59,4 +63,32 @@ class WorkspaceRegressionTest {
         rule.onNodeWithText("Apply Hours hex").assertExists()
         rule.waitUntil(10000) { !imeVisible() }
     }
+    @Test fun visibleFontCardAutomaticallyRendersVerifiedTypefaceWithoutChangingDraft() {
+        ready()
+        val context = rule.activity
+        val catalog = context.assets.open("google-fonts/catalog.tsv").bufferedReader().use { FontCatalog.parse(it.readText()) }
+        val entry = catalog.fonts.single { it.family == "Roboto Mono" }
+        val directory = File(context.filesDir, "google-fonts/${entry.blob}").apply { mkdirs() }
+        val fixture = InstrumentationRegistry.getInstrumentation().context.assets
+        fixture.open("font-preview-fixture/font.ttf").use { input -> File(directory, "font.ttf").outputStream().use { input.copyTo(it) } }
+        fixture.open("font-preview-fixture/OFL.txt").use { input -> File(directory, "license.txt").outputStream().use { input.copyTo(it) } }
+        var editor: EditorState? = null
+        rule.runOnIdle { editor = ViewModelProvider(rule.activity)[EditorState::class.java] }
+        val originalTypeface = editor!!.customTypeface
+        val originalLabel = editor!!.fontLabel
+        rule.onNodeWithText("Type & color").performScrollTo().performClick()
+        rule.onNodeWithText("Browse Google Fonts").performScrollTo().performClick()
+        rule.onNodeWithText("Search Google Fonts").performTextInput("Roboto Mono").performImeAction()
+        rule.onNodeWithTag("font-library-list").performScrollToNode(hasText("Roboto Mono"))
+        rule.waitUntil(15000) { rule.onAllNodesWithTag("font-sample-Roboto Mono").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithTag("font-sample-Roboto Mono").assertIsDisplayed()
+        rule.runOnIdle {
+            val library = ViewModelProvider(rule.activity)[FontLibraryState::class.java]
+            assertNotNull(library.cardFonts[entry.blob])
+            assertNull(library.selected)
+            assertSame(originalTypeface, editor!!.customTypeface)
+            assertEquals(originalLabel, editor!!.fontLabel)
+        }
+    }
+
 }

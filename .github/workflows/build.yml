@@ -117,11 +117,10 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Restored prominent Stacked / Side-by-side clock layout selection with draft persistence.
-            Hue ring + saturation/brightness diamond replaces RGB sliders; hex entry retained.
-            Keyboard navigation now clears focus, uses explicit resize and a single IME inset owner.
-            Emulator regressions cover keyboard dismissal/page navigation, clock layout and wheel interactions.
-            Google Fonts, manual TTF/OTF, normal editor/export and BLE retained.
+            Actual Google Fonts digit samples load automatically in visible cards as you scroll.
+            Verified font/license files are cached for offline reuse; browsing never changes your draft.
+            Automatic previews can be paused and are bounded by viewport, lifecycle and storage limits.
+            Clock layout, colour wheel, keyboard recovery, manual TTF/OTF and BLE retained.
           files: release-files/*
   prune-prereleases:
     needs: prerelease

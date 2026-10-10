@@ -13,8 +13,8 @@ android {
         minSdk = 26
         targetSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 11
-        versionName = "0.7.1"
+        versionCode = 12
+        versionName = "0.7.2"
         val sha = providers.environmentVariable("GITHUB_SHA").orNull
             ?.takeIf { it.matches(Regex("[0-9a-fA-F]{40}")) }?.take(12) ?: "local"
         buildConfigField("String", "BUILD_COMMIT", "\"$sha\"")

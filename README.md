@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.7.1 beta / editor interaction fixes.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.7.2 beta / automatic font previews.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -33,7 +33,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 - Explicit watch selection, Android-version Bluetooth/scan permissions, service discovery, MTU-derived packet sizes, serialized GATT writes and watch-requested blocks.
 - Bounded timeouts/retries, progress, cancellation, diagnostics export, and a separate captured-face test action with confirmation.
 
-Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. The **Internet permission is used only for explicitly requested Google Fonts downloads**; there is no broad storage permission, account, analytics or cloud draft sync. Uploads require the app in the foreground. Editor changes are saved locally and restored after restart. Connections and pending transfers are never restored. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
+Android10 uses legacy Bluetooth permissions and runtime Location for BLE scanning; Android12+ requests Nearby devices. The **Internet permission is used for Google Fonts downloads, including automatic previews of visible cards**; there is no broad storage permission, account, analytics or cloud draft sync. Uploads require the app in the foreground. Editor changes are saved locally and restored after restart. Connections and pending transfers are never restored. See [port status](docs/PORT_STATUS.md) for exact limits and unresolved protocol fields.
 
 ## Finding the controls
 
@@ -49,9 +49,9 @@ Clock layout now starts with an explicit **Stacked / Side by side** selector. Cu
 
 ## Google Fonts (no API key)
 
-Open **Type & color → Browse Google Fonts**, search/filter the bundled catalog, tap **Get**, review the digit sample, then **Use font**. The watch preview updates and a private font/license copy is saved with the draft. Downloaded entries open offline. Your working **Import TTF / OTF** picker is unchanged.
+Open **Type & color → Browse Google Fonts**, search/filter the bundled catalog, wait for the visible cards’ real-font samples, tap **Choose**, then **Use font**. The watch preview updates and a private font/license copy is saved with the draft. Downloaded entries open offline. Your working **Import TTF / OTF** picker is unchanged.
 
-The bundled snapshot contains 1,723 eligible Latin-supporting families, one default/upright TTF per family; it is not a live feed or every weight/italic variant. Downloads come from Google's public `google/fonts` GitHub repository at a pinned revision, not a Google account/API. Only selected font/license paths are requested. Photos, watchfaces and editor settings are never uploaded. Read [GOOGLE_FONTS.md](docs/GOOGLE_FONTS.md) for scope, storage and validation.
+The bundled snapshot contains 1,723 eligible Latin-supporting families, one default/upright TTF per family; it is not a live feed or every weight/italic variant. Downloads come from Google's public `google/fonts` GitHub repository at a pinned revision, not a Google account/API. Only visible-preview or explicitly selected font/license paths are requested. Automatic previews can be paused in the library. Photos, watchfaces and editor settings are never uploaded. Read [GOOGLE_FONTS.md](docs/GOOGLE_FONTS.md) for scope, storage and validation.
 
 ## Local draft and preview workspace
 

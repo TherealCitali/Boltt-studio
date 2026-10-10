@@ -1,4 +1,8 @@
-# Native port status · 0.7.1
+# Native port status · 0.7.2
+
+## Automatic font previews
+
+0.7.2 renders actual digit samples directly in visible Google Fonts cards. Automatic requests are viewport-driven, lifecycle-aware, sequential, cancellable and storage-bounded. Browsing never applies a font to the draft.
 
 ## Editor interaction fixes
 
