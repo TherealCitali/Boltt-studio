@@ -24,8 +24,8 @@ class WorkspaceRegressionTest {
     @Test fun keyboardCloseAndPageNavigationRestoreExpandedWorkspace() {
         ready()
         rule.onNodeWithText("Expand").performClick()
-        val beforePreview = rule.onNodeWithTag("preview-region").getUnclippedBoundsInRoot().height.value
-        val beforeSheet = rule.onNodeWithTag("settings-sheet").getUnclippedBoundsInRoot().height.value
+        val beforePreview = rule.onNodeWithTag("preview-region").getUnclippedBoundsInRoot().let { (it.bottom - it.top).value }
+        val beforeSheet = rule.onNodeWithTag("settings-sheet").getUnclippedBoundsInRoot().let { (it.bottom - it.top).value }
         rule.onNodeWithText("Type & color").performScrollTo().performClick()
         rule.onNodeWithText("Browse Google Fonts").performScrollTo().performClick()
         rule.onNodeWithText("Search Google Fonts").performClick().performTextInput("Roboto")
@@ -35,9 +35,9 @@ class WorkspaceRegressionTest {
         rule.onNodeWithText("Back").performClick()
         rule.onNodeWithText("Back").performClick()
         rule.waitUntil(10000) {
-            kotlin.math.abs(rule.onNodeWithTag("settings-sheet").getUnclippedBoundsInRoot().height.value - beforeSheet) < 3f
+            kotlin.math.abs(rule.onNodeWithTag("settings-sheet").getUnclippedBoundsInRoot().let { (it.bottom - it.top).value } - beforeSheet) < 3f
         }
-        assertEquals(beforePreview, rule.onNodeWithTag("preview-region").getUnclippedBoundsInRoot().height.value, 3f)
+        assertEquals(beforePreview, rule.onNodeWithTag("preview-region").getUnclippedBoundsInRoot().let { (it.bottom - it.top).value }, 3f)
         rule.onNodeWithText("Photo & crop").performScrollTo().assertIsDisplayed()
         screenshot("keyboard-restored")
     }
