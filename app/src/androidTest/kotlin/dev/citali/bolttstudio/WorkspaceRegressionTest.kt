@@ -78,7 +78,8 @@ class WorkspaceRegressionTest {
         val originalLabel = editor!!.fontLabel
         rule.onNodeWithText("Type & color").performScrollTo().performClick()
         rule.onNodeWithText("Browse Google Fonts").performScrollTo().performClick()
-        rule.onNodeWithText("Search Google Fonts").performTextInput("Roboto Mono").performImeAction()
+        rule.onNodeWithText("Search Google Fonts").performClick().performTextInput("Roboto Mono")
+        rule.onNodeWithText("Search Google Fonts").performImeAction()
         rule.onNodeWithTag("font-library-list").performScrollToNode(hasText("Roboto Mono"))
         rule.waitUntil(15000) { rule.onAllNodesWithTag("font-sample-Roboto Mono").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("font-sample-Roboto Mono").assertIsDisplayed()
