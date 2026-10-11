@@ -1,4 +1,8 @@
-# Native port status · 0.7.3
+# Native port status · 0.7.4
+
+## AMOLED black correction
+
+0.7.4 corrects near-neutral dark wallpaper pixels after resampling and before preview/encoding. Default cutoff24, neutral tolerance8, enabled for new and pre-existing drafts; persistent switch/cutoff and source-photo preservation. Current-face sends use corrected data; the captured test asset is unchanged. See [AMOLED_BLACK.md](AMOLED_BLACK.md).
 
 ## Instant offline font previews
 

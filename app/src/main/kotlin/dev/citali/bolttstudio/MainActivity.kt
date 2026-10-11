@@ -81,10 +81,10 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
     }
     val frame = remember(state.background, state.design, state.family, state.hours, state.minutes,
         state.outline, state.zoom, state.panX, state.panY, state.customTypeface, state.useCustomFont,
-        state.previewMinute) {
+        state.previewMinute, state.amoledBlack, state.blackCutoff) {
         FaceRenderer.render(state.background, 0, 0, true, state.family,
             state.hours, state.minutes, state.outline, state.zoom, state.panX, state.panY,
-            if (state.useCustomFont) state.customTypeface else null, state.design, state.previewDigits)
+            if (state.useCustomFont) state.customTypeface else null, state.design, state.previewDigits, state.amoledBlack, state.blackCutoff)
     }
     // Capture export bytes before launching SAF so edits cannot silently change the pending export.
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
@@ -196,6 +196,18 @@ private fun Studio(state: EditorState = viewModel(), watch: WatchViewModel) {
                         Control("Horizontal crop", state.panX, -1f..1f) { state.panX = it }
                         Control("Vertical crop", state.panY, -1f..1f) { state.panY = it }
                         TextButton(onClick = { state.zoom = 1f; state.panX = 0f; state.panY = 0f }) { Text("Reset crop") }
+                        HorizontalDivider()
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text("AMOLED pure black", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                            Switch(state.amoledBlack, { state.amoledBlack = it })
+                        }
+                        Text("Converts near-black greys in the wallpaper to #000000 before export and sending. Preview shows the same correction. Your original photo is kept.", style = MaterialTheme.typography.bodySmall)
+                        if (state.amoledBlack) {
+                            Text("Black cutoff · ${state.blackCutoff} / 255")
+                            Slider(state.blackCutoff.toFloat(), { state.blackCutoff = it.roundToInt() }, valueRange = 0f..48f, steps = 47)
+                            Text("Higher values remove more dark-grey shadow detail. Stronger colour tints and clock colours are preserved.", style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { state.blackCutoff = 24 }) { Text("Reset black cutoff") }
+                        }
                     }
                     "Clock" -> {
                         Text("Find your balance.", style = MaterialTheme.typography.headlineSmall)

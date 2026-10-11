@@ -51,6 +51,8 @@ class EditorState(application: Application) : AndroidViewModel(application) {
     var zoom by saved(initial.zoom)
     var panX by saved(initial.panX)
     var panY by saved(initial.panY)
+    var amoledBlack by saved(initial.amoledBlack)
+    var blackCutoff by saved(initial.blackCutoff)
     var pendingExport: ByteArray? = null
 
     private fun <T> saved(initial: T) = object : ReadWriteProperty<Any?, T> {
@@ -62,7 +64,7 @@ class EditorState(application: Application) : AndroidViewModel(application) {
     }
     private fun persist() {
         val data = DraftSettings(design, independent, editHours, previewMinute, outline, family,
-            useCustomFont, snap, hours, minutes, zoom, panX, panY, photoName, fontName, fontLabel, stacked)
+            useCustomFont, snap, hours, minutes, zoom, panX, panY, photoName, fontName, fontLabel, stacked, amoledBlack, blackCutoff)
         prefs.edit().putString("draft", data.encode()).apply()
     }
     init {

@@ -90,4 +90,20 @@ class WorkspaceRegressionTest {
         }
     }
 
+    @Test fun nearBlackPhotoIsCorrectedInPreviewAndEncodedFaceWithoutChangingSource() {
+        val photo = Bitmap.createBitmap(240, 296, Bitmap.Config.ARGB_8888).apply { eraseColor(0xff111111.toInt()) }
+        fun render(enabled: Boolean) = dev.citali.bolttstudio.ui.FaceRenderer.render(photo, 74, 41, true,
+            "sans-serif", -1, -1, false, 1f, 0f, 0f, amoledBlack = enabled)
+        rule.runOnIdle {
+            val on = render(true)
+            assertEquals(0xff000000.toInt(), on.image.getPixel(0, 0))
+            assertTrue(on.face.background.pixels.all { it == 0xff000000.toInt() })
+            val roundtrip = dev.citali.bolttstudio.codec.MoyFace.parse(dev.citali.bolttstudio.codec.MoyFace.build(on.face))
+            assertTrue(roundtrip.background.pixels.all { it == 0xff000000.toInt() })
+            val off = render(false)
+            assertEquals(0xff111111.toInt(), off.image.getPixel(0, 0))
+            assertEquals(0xff111111.toInt(), photo.getPixel(0, 0))
+        }
+    }
+
 }

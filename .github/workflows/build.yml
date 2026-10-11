@@ -117,10 +117,11 @@ jobs:
           make_latest: false
           fail_on_unmatched_files: true
           body: |
-            Instant offline Google Fonts previews: all 1,723 samples bundled, no preview network downloads.
-            Full fonts and licenses download only after Get/Choose. Existing downloaded fonts and draft remain intact.
-            Cold-library emulator regression verifies a visible sample without downloading/applying a font.
-            Keyboard/layout/wheel regressions and normal digital/BLE behavior retained.
+            AMOLED pure-black correction converts near-neutral dark wallpaper pixels to exact RGB zero.
+            Enabled by default; persistent on/off and cutoff controls under Photo & crop.
+            Preview, export and current-face upload use the same corrected background; original photo retained.
+            Native renderer + codec regression verifies zero survives encoding; captured test face is untouched.
+            Offline font previews, layout/colour-wheel controls and BLE remain intact.
           files: release-files/*
   prune-prereleases:
     needs: prerelease

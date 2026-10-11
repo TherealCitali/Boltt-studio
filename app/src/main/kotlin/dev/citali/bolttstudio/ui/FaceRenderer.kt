@@ -21,7 +21,8 @@ object FaceRenderer {
     }
     fun render(background: Bitmap?, x: Int, y: Int, stacked: Boolean, family: String,
         hourColor: Int, minuteColor: Int, outline: Boolean, zoom: Float, panX: Float, panY: Float, customTypeface: Typeface? = null,
-        design: ClockDesign? = null, previewDigits: List<Int> = listOf(1, 0, 0, 9)): Frame {
+        design: ClockDesign? = null, previewDigits: List<Int> = listOf(1, 0, 0, 9),
+        amoledBlack: Boolean = true, blackCutoff: Int = AmoledBlack.DEFAULT_CUTOFF): Frame {
         val bg = Bitmap.createBitmap(240, 296, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bg); canvas.drawColor(Color.BLACK)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -33,6 +34,12 @@ object FaceRenderer {
         } else {
             paint.shader = LinearGradient(0f, 0f, 0f, 296f, 0xff2b3a55.toInt(), 0xff0d1220.toInt(), Shader.TileMode.CLAMP)
             canvas.drawRect(0f, 0f, 240f, 296f, paint); paint.shader = null
+        }
+        if (amoledBlack) {
+            val pixels = IntArray(240 * 296)
+            bg.getPixels(pixels, 0, 240, 0, 0, 240, 296)
+            AmoledBlack.apply(pixels, blackCutoff)
+            bg.setPixels(pixels, 0, 240, 0, 0, 240, 296)
         }
         fun digit(n: Int, color: Int): Bitmap {
             val big = Bitmap.createBitmap(252, 396, Bitmap.Config.ARGB_8888); val c = Canvas(big)

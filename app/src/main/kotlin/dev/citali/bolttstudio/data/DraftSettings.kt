@@ -16,10 +16,12 @@ data class DraftSettings(
     val zoom: Float = 1f, val panX: Float = 0f, val panY: Float = 0f,
     val photo: String = "", val font: String = "", val fontLabel: String = "Imported font",
     val stacked: Boolean = true,
+    val amoledBlack: Boolean = true, val blackCutoff: Int = 24,
 ) {
     fun encode(): String {
         val p = Properties()
         fun put(k: String, v: Any) { p.setProperty(k, v.toString()) }
+        put("amoledBlack", amoledBlack); put("blackCutoff", blackCutoff)
         put("version", 1); put("stacked", stacked)
         fun group(prefix: String, g: ClockGroup) {
             put("$prefix.x", g.x); put("$prefix.y", g.y); put("$prefix.width", g.width)
@@ -56,6 +58,7 @@ data class DraftSettings(
                 hours = int("hours", -1) or 0xff000000.toInt(), minutes = int("minutes", -1) or 0xff000000.toInt(),
                 zoom = float("zoom", 1f, 1f..3f), panX = float("panX", 0f, -1f..1f), panY = float("panY", 0f, -1f..1f),
                 photo = asset("photo"), font = font,
+                amoledBlack = bool("amoledBlack", true), blackCutoff = int("blackCutoff", 24).coerceIn(0, 48),
                 fontLabel = p.getProperty("fontLabel", "Imported font").filterNot { it.isISOControl() }.take(120).ifBlank { "Imported font" },
             )
         }

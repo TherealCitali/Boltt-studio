@@ -13,7 +13,7 @@ A native Android watchface editor for the **Fire-Boltt Brillia** — based on th
 
 </div>
 
-> **0.7.3 beta / instant offline font previews.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
+> **0.7.4 beta / AMOLED black correction.** Edit, export and send faces through Android Bluetooth. Test the **original captured Da Fit face first** on the documented Brillia firmware. CI validates codec/protocol logic, **not compatibility, safe recovery or installation on a physical watch**. Read the [hardware test checklist](docs/BLE_TESTING.md).
 
 ## Native editor
 
@@ -42,6 +42,10 @@ The preview remains visible while the non-modal sheet opens separate **Photo**, 
 Depth Lab, stripe probes, transparency masks and both brush editors were removed at the user's request in0.5.0. Generated faces now use the normal two-table digital path (hour set0, minute set1); no depth/masking state can be re-enabled. This removal is not a confirmed diagnosis or hardware fix for the previously reported missing minutes.
 
 **Analogue faces are next, pending a supplied reference file.** A Base64 text file is acceptable. No analogue-hand encoding is guessed or enabled yet.
+
+## AMOLED pure black
+
+**Photo & crop → AMOLED pure black** is enabled by default, including existing drafts. After photo scaling/cropping, near-neutral background pixels with every RGB channel at or below24 are converted to exact `#000000`; channel spread must be at most8. Preview, export and current-face upload share the corrected background. A saved cutoff control (0–48) and off switch let you preserve shadow detail. Original photos and clock colours are not rewritten. Captured test-face bytes remain unchanged. See [AMOLED_BLACK.md](docs/AMOLED_BLACK.md).
 
 ## Layout, keyboard and colour controls
 
