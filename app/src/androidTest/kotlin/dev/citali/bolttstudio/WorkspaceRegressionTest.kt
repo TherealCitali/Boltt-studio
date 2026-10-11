@@ -75,6 +75,12 @@ class WorkspaceRegressionTest {
         val originalLabel = editor!!.fontLabel
         rule.onNodeWithText("Type & color").performScrollTo().performClick()
         rule.onNodeWithText("Browse Google Fonts").performScrollTo().performClick()
+        // Asset parsing is IO work, not a Compose idling resource. Wait before querying its rows.
+        rule.waitUntil(20000) {
+            var loaded = false
+            rule.runOnIdle { loaded = ViewModelProvider(rule.activity)[FontLibraryState::class.java].catalog != null }
+            loaded
+        }
         rule.onNodeWithText("Search Google Fonts").performClick().performTextInput("Roboto Mono")
         rule.onNodeWithText("Search Google Fonts").performImeAction()
         rule.onNodeWithTag("font-library-list").performScrollToNode(hasText("Roboto Mono"))
